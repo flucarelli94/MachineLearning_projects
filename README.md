@@ -9,8 +9,7 @@ Covered topics:
  * Handling skewed data (**skewness** calculation, log1p symmetrization)
  * Data scaling (**StandardScaler**, **RobustScaler**)
  * Model hyperparameter tuning (**GridSearchCV**)
- * **Cross validation**
- * Score estimation (**RMS error**)
+ * Score estimation (**RMS error**, **cross validation**)
  * Pipeline construction (**Pipeline**)
  * Performance visualization (true target/predictions, ratio plot)
  * Feature importance
