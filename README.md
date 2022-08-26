@@ -19,3 +19,16 @@ This folder contains two files, with examples of regression and classification a
     - Grid search cross-validation (*GridSearchCV*)
     - Pipeline
     - Confusion matrix
+
+## GreatLearning
+This folder contains a simple example of a **deep learning** algorithm for **classification** using *keras*:
+  - ```sklearn.datasets.load_iris```: download iris data
+  - ```seaborn.pairplot```: make matrix of distributions and scatter plots of all features
+  - heatmap
+  - ```sklearn.utils.shuffle```: shuffle datasets when targets are grouped (could bias the classifier)
+  - Data scaling (*StandardScaler*)
+  - Feature encoding (*LabelBinarizer* from sklearn, similar to OneHotEncoder)
+  - ```train_test_split```: to divide the data into train and test
+  - Model training (*Sequential*)
+  - *Confusion matrix*
+  - Accuracy/Score VS Epoch
