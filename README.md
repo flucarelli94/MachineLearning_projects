@@ -27,3 +27,20 @@ Covered topics:
  * **Cross validation**
  * Score estimatation
  * ML algorithms: **Logistic regression**, **kNN**, **Naive Bayes Classifier**, **Decision Tree**, **Random Forest**
+
+# Floods
+Contains a model for a **classification problem**: determine whether in a given year there will likely be floods or not. Note: the data of this project are not provided, only the jupyter notebook is available.</br>
+Covered topics:
+ * Data load and inspection (heatmap, **Pearson correlation**, boxplots, histograms, scatter plots, ...)
+ * Handling of missing values (**IterativeImputer**)
+ * Encoding of categorical features (**LabelEncoder**)
+ * Feature combination
+ * Dealing with imbalanced data (**SMOTE**)
+ * Handling skewed data (**skewness**, log1p symmetrization)
+ * **Pipeline**
+ * **Cross validation**
+ * Hyperparameter tuning (**GridSearchCV**)
+ * Data scaling (**StandardScaler**)
+ * Performance visualization (**confusion matrix**)
+ * **Overtraining** check
+ * ML algorithms: **Logistic regression**, **Linear Discriminant Analysis**, **Decision Tree**, **Random forest**, **kNN**
