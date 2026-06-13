@@ -5,7 +5,6 @@ writer), small color helpers used to render label palettes, and image
 statistics helpers used by the data module at `setup()` time.
 """
 
-import random
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -83,11 +82,13 @@ def compute_channel_stats(
         raise ValueError(f"images has dtype {imgs.dtype}; expected uint8")
     if imgs.ndim != 4:
         raise ValueError(
-            "images has shape {imgs.shape}; expected 4 dimensions (N, H, W, C)"
+            f"images has shape {imgs.shape}; expected 4 dimensions (N, H, W, C)"
         )
 
-    mean = np.mean(imgs.astype(np.float64) / 255.0, axis=(0, 1))
-    std = np.std(imgs.astype(np.float64) / 255.0, axis=(0, 1))
+    # Reduce over (N, H, W) to leave per-channel (C,) results.
+    x = imgs.astype(np.float64) / 255.0
+    mean = np.mean(x, axis=(0, 1, 2))
+    std = np.std(x, axis=(0, 1, 2))
     return mean.tolist(), std.tolist()
 
 
