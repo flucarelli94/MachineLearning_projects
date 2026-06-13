@@ -1,8 +1,8 @@
 """Typed configuration for the land-cover segmentation pipeline.
 
-This module is the **single home** for data ingestion parameters (LoveDA-specific, values (via
-`DataConfig`), model architecture design (via `ModelConfig`), and run-level
-settings (via `RunConfig`).
+This module is the **single home** for data settings (LoveDA-specific, via `DataConfig`),
+model design (via `ModelConfig`), run settings (via `RunConfig`), optimizer (via `OptimConfig`),
+loss (via `LossConfig`), and training loop configuration (via `TrainConfig`).
 """
 
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
@@ -123,7 +123,7 @@ class RunConfig:
     Attributes
     ----------
     output_name : str
-        Subdirectory name under ``TrainConfig.ckpt_root`` where the run's
+        Subdirectory name under ``TrainConfig.artifacts_root`` where the run's
         checkpoints, logs, and metadata are written.
     seed : int
         Global RNG seed for training.
@@ -142,6 +142,72 @@ class RunConfig:
 
 
 @dataclass
+class OptimConfig:
+    """Configuration for the optimizer and learning-rate settings.
+
+    Attributes
+    ----------
+    name : str
+        Optimizer identifier. Only `"adamw"` is supported.
+    lr : float
+        Peak learning rate for decoder / non-encoder parameters.
+    weight_decay : float
+        AdamW weight decay coefficient.
+    encoder_lr_scale : float
+        Encoder learning rate as a fraction of `lr` after warmup
+        (e.g. `0.1` → encoder LR is `0.1 * lr`).
+    encoder_lr_warmup_epochs : int
+        Number of epochs to linearly ramp the encoder LR from `0` to
+        `encoder_lr_scale * lr`.
+    """
+
+    name: str = "adamw"
+    lr: float = 3e-4
+    weight_decay: float = 1e-4
+    encoder_lr_scale: float = 0.1
+    encoder_lr_warmup_epochs: int = 5
+
+
+@dataclass
+class LossConfig:
+    """Configuration for the training loss.
+
+    Attributes
+    ----------
+    name : str
+        Loss identifier. Only ``"dice_ce"`` (0.5 CE + 0.5 Dice) is supported.
+    use_class_weights : bool
+        If `True`, derive per-class CE weights from train-set pixel counts.
+    """
+
+    name: str = "dice_ce"
+    use_class_weights: bool = True
+
+
+@dataclass
+class TrainConfig:
+    """Configuration for the training loop.
+
+    Attributes
+    ----------
+    epochs : int
+        Maximum number of training epochs.
+    patience : int
+        Early-stopping patience on validation mean IoU.
+    grad_clip : float
+        Max gradient norm for global clipping; `0` disables clipping.
+    artifacts_root : str
+        Root directory for run outputs (checkpoints, logs, metadata). Each run
+        writes under `{artifacts_root}/{RunConfig.output_name}/`.
+    """
+
+    epochs: int = 5
+    patience: int = 6
+    grad_clip: float = 1.0
+    artifacts_root: str = "artifacts/runs"
+
+
+@dataclass
 class Config:
     """Top-level project configuration.
 
@@ -153,11 +219,20 @@ class Config:
         Model architecture configuration.
     run : RunConfig
         Run-level settings (output directory name, global seed, device).
+    optim : OptimConfig
+        Optimizer and learning-rate schedule.
+    loss : LossConfig
+        Training loss.
+    train : TrainConfig
+        Training loop (epochs, early stopping, artifact paths).
     """
 
     data: DataConfig = field(default_factory=DataConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     run: RunConfig = field(default_factory=RunConfig)
+    optim: OptimConfig = field(default_factory=OptimConfig)
+    loss: LossConfig = field(default_factory=LossConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a plain nested `dict` view (suitable for YAML/JSON dump)."""
@@ -256,4 +331,14 @@ def dump(cfg: Config, path: str | Path) -> None:
     p.write_text(yaml.safe_dump(cfg.to_dict(), sort_keys=False))
 
 
-__all__ = ["Config", "DataConfig", "ModelConfig", "RunConfig", "load", "dump"]
+__all__ = [
+    "Config",
+    "DataConfig",
+    "LossConfig",
+    "ModelConfig",
+    "OptimConfig",
+    "RunConfig",
+    "TrainConfig",
+    "load",
+    "dump",
+]

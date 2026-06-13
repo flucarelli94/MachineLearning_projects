@@ -8,8 +8,11 @@ import pytest
 from land_cover_segmentation.config import (
     Config,
     DataConfig,
+    LossConfig,
     ModelConfig,
+    OptimConfig,
     RunConfig,
+    TrainConfig,
     dump,
     load,
 )
@@ -36,7 +39,40 @@ def test_model_config_keys():
 
 def test_config_keys():
     config = Config()
-    assert set(asdict(config).keys()) == {"data", "model", "run"}
+    assert set(asdict(config).keys()) == {
+        "data",
+        "model",
+        "run",
+        "optim",
+        "loss",
+        "train",
+    }
+
+
+def test_optim_config_keys():
+    optim = OptimConfig()
+    assert set(asdict(optim).keys()) == {
+        "name",
+        "lr",
+        "weight_decay",
+        "encoder_lr_scale",
+        "encoder_lr_warmup_epochs",
+    }
+
+
+def test_loss_config_keys():
+    loss = LossConfig()
+    assert set(asdict(loss).keys()) == {"name", "use_class_weights"}
+
+
+def test_train_config_keys():
+    train = TrainConfig()
+    assert set(asdict(train).keys()) == {
+        "epochs",
+        "patience",
+        "grad_clip",
+        "artifacts_root",
+    }
 
 
 def test_data_config_keys():
@@ -74,6 +110,29 @@ class TestLoad:
         yaml_path = tmp_path / "bad.yaml"
         yaml_path.write_text("run:\n  devce: cpu\n")
         with pytest.raises(ValueError, match="run.devce"):
+            load(yaml_path)
+
+    @staticmethod
+    def test_applies_train_optim_loss_overrides(tmp_path: Path):
+        yaml_path = tmp_path / "cfg.yaml"
+        yaml_path.write_text(
+            "optim:\n  lr: 0.001\n  encoder_lr_warmup_epochs: 2\n"
+            "loss:\n  use_class_weights: false\n"
+            "train:\n  epochs: 5\n  artifacts_root: /tmp/runs\n"
+        )
+        cfg = load(yaml_path)
+        assert cfg.optim.lr == 0.001
+        assert cfg.optim.encoder_lr_warmup_epochs == 2
+        assert cfg.optim.name == "adamw"
+        assert cfg.loss.use_class_weights is False
+        assert cfg.train.epochs == 5
+        assert cfg.train.artifacts_root == "/tmp/runs"
+
+    @staticmethod
+    def test_rejects_unknown_train_key(tmp_path: Path):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text("train:\n  epocs: 5\n")
+        with pytest.raises(ValueError, match="train.epocs"):
             load(yaml_path)
 
     @staticmethod
