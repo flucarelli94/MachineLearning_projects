@@ -20,15 +20,13 @@ dependencies = [
     "scikit-learn>=1.4",
     "matplotlib>=3.8",
     "pyyaml>=6.0",
-    "typer>=0.12",
+    "click>=8.1",
     "tqdm>=4.66",
     "pillow>=10.2",
 ]
 
 [project.scripts]
-land-cover-seg-train   = "land_cover_segmentation.cli:train"
-land-cover-seg-eval    = "land_cover_segmentation.cli:eval_"
-land-cover-seg-predict = "land_cover_segmentation.cli:predict"
+land-cover-seg-download = "land_cover_segmentation.data.download:main"
 
 [tool.uv]
 package = true
