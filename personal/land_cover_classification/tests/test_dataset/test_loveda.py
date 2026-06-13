@@ -15,20 +15,10 @@ from land_cover_segmentation.dataset.loveda import (
     LoveDADataModule,
     _LoveDAAdapter,
 )
-from land_cover_segmentation.dataset.transforms import build_val_transform
-
-
-class _FakeSplit:
-    """Minimal indexable list-of-items, mimicking a torchgeo split."""
-
-    def __init__(self, items: list[dict]) -> None:
-        self._items = items
-
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __getitem__(self, idx: int) -> dict:
-        return self._items[idx]
+from land_cover_segmentation.dataset.transforms import (
+    build_train_transform,
+    build_val_transform,
+)
 
 
 class TestLoveDAAdapter:
@@ -38,8 +28,8 @@ class TestLoveDAAdapter:
         lambda mask_value: torch.full((64, 64), mask_value, dtype=torch.long)
     )
 
-    def test_adapter_remaps_nodata_to_ignore_index(self):
-        ds = _FakeSplit([{"image": self.image, "mask": self.mask(7)}])
+    def test_adapter_remaps_nodata_to_ignore_index(self, fake_split):
+        ds = fake_split([{"image": self.image, "mask": self.mask(7)}])
         adapter = _LoveDAAdapter(
             ds, self.val_transform, nodata_label=7, ignore_index=255
         )
@@ -49,16 +39,16 @@ class TestLoveDAAdapter:
         ).all(), "every nodata pixel should be remapped to ignore_index"
         assert (mask != 7).all(), "no original nodata label should survive"
 
-    def test_adapter_preserves_non_nodata_labels(self):
-        ds = _FakeSplit([{"image": self.image, "mask": self.mask(3)}])
+    def test_adapter_preserves_non_nodata_labels(self, fake_split):
+        ds = fake_split([{"image": self.image, "mask": self.mask(3)}])
         adapter = _LoveDAAdapter(
             ds, self.val_transform, nodata_label=7, ignore_index=255
         )
         _, mask = adapter[0]
         assert (mask == 3).all()
 
-    def test_adapter_output_shapes_and_dtypes(self):
-        ds = _FakeSplit([{"image": self.image, "mask": self.mask(0)}])
+    def test_adapter_output_shapes_and_dtypes(self, fake_split):
+        ds = fake_split([{"image": self.image, "mask": self.mask(0)}])
         adapter = _LoveDAAdapter(
             ds, self.val_transform, nodata_label=7, ignore_index=255
         )
@@ -70,17 +60,77 @@ class TestLoveDAAdapter:
         assert mask.shape == (64, 64)
         assert mask.dtype == torch.int64
 
-    def test_adapter_length_matches_underlying_split(self):
-        ds = _FakeSplit([{"image": self.image, "mask": self.mask(0)} for _ in range(5)])
+    def test_adapter_length_matches_underlying_split(self, fake_split):
+        ds = fake_split([{"image": self.image, "mask": self.mask(0)} for _ in range(5)])
         adapter = _LoveDAAdapter(
             ds, self.val_transform, nodata_label=7, ignore_index=255
         )
         assert len(adapter) == 5
 
-    @staticmethod
-    def test_datamodule_properties_require_setup():
-        dm = LoveDADataModule(DataConfig())
-        with pytest.raises(RuntimeError, match="setup"):
-            _ = dm.mean
-        with pytest.raises(RuntimeError, match="setup"):
-            _ = dm.std
+
+def test_datamodule_properties_require_setup():
+    dm = LoveDADataModule(DataConfig())
+    with pytest.raises(RuntimeError, match="setup"):
+        _ = dm.mean
+    with pytest.raises(RuntimeError, match="setup"):
+        _ = dm.std
+
+
+def test_datamodule_dataloaders_require_setup():
+    dm = LoveDADataModule(DataConfig())
+    with pytest.raises(RuntimeError, match="setup"):
+        dm.train_dataloader()
+    with pytest.raises(RuntimeError, match="setup"):
+        dm.val_dataloader()
+
+
+def test_train_dataloader_batch_shapes_and_dtypes(datamodule_with_fake_adapters):
+    dm = datamodule_with_fake_adapters(image_size=64, n_items=8, batch_size=2)
+    img, mask = next(iter(dm.train_dataloader()))
+    assert img.shape == (2, 3, 64, 64) and img.dtype == torch.float32
+    assert mask.shape == (2, 64, 64) and mask.dtype == torch.int64
+
+
+def test_val_dataloader_batch_shapes_and_dtypes(datamodule_with_fake_adapters):
+    dm = datamodule_with_fake_adapters(image_size=64, n_items=8, batch_size=2)
+    img, mask = next(iter(dm.val_dataloader()))
+    assert img.shape == (2, 3, 64, 64) and img.dtype == torch.float32
+    assert mask.shape == (2, 64, 64) and mask.dtype == torch.int64
+
+
+def test_train_dataloader_is_deterministic_with_same_seed(
+    datamodule_with_fake_adapters,
+):
+    dm1 = datamodule_with_fake_adapters(image_size=64, n_items=8, batch_size=2)
+    dm2 = datamodule_with_fake_adapters(image_size=64, n_items=8, batch_size=2)
+    img1, mask1 = next(iter(dm1.train_dataloader()))
+    img2, mask2 = next(iter(dm2.train_dataloader()))
+    assert torch.equal(img1, img2)
+    assert torch.equal(mask1, mask2)
+
+
+def test_adapter_set_seed_changes_augmentation_output(fake_split):
+
+    ds = fake_split(
+        [
+            {
+                "image": torch.zeros((3, 64, 64), dtype=torch.uint8),
+                "mask": torch.full((64, 64), 0, dtype=torch.long),
+            }
+        ]
+    )
+    transform = build_train_transform(
+        image_size=32, ignore_index=255, mean=[0.5] * 3, std=[0.5] * 3, seed=0
+    )
+    adapter = _LoveDAAdapter(ds, transform, nodata_label=7, ignore_index=255)
+    adapter.set_seed(1)
+    img_a, _ = adapter[0]
+    adapter.set_seed(1)
+    img_a_again, _ = adapter[0]
+    # same seed must reproduce the same output
+    assert torch.equal(img_a, img_a_again), "same seed must reproduce the same output"
+
+    # different seed must change the output
+    adapter.set_seed(999)
+    img_b, _ = adapter[0]
+    assert not torch.equal(img_a, img_b), "different seed must change the output"

@@ -1,21 +1,15 @@
 """LoveDA datamodule.
 
-Lifecycle (mirrors Lightning's contract without inheriting from it, so
-the datamodule stays dependency-light and easy to unit-test):
+Lifecycle:
 
 * :meth:`LoveDADataModule.prepare_data` — single-process; ensures the
   LoveDA archives are present on disk (idempotent torchgeo download).
 * :meth:`LoveDADataModule.setup` — per-process; instantiates per-split
-  torchgeo datasets, computes channel normalization statistics on a
-  seeded subset of the train split, builds train/val transforms with
-  those stats, and wraps each split in a ``_LoveDAAdapter`` so it
-  yields ``(image, mask)`` tuples ready for a DataLoader.
-
-The ``train/val/test_dataloader()`` methods are added in a subsequent
-step.
+  torchgeo datasets, computes channel normalization statistics on the
+  train split, builds train/val transforms with those stats, and wraps
+  each split in a ``_LoveDAAdapter`` so it yields ``(image, mask)``
+  tuples ready for a DataLoader.
 """
-
-from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Any
@@ -99,6 +93,30 @@ class _LoveDAAdapter(torch.utils.data.Dataset):
         out = self._transform(image=image, mask=mask)
         return out["image"], out["mask"].to(torch.int64)
 
+    def set_seed(self, seed: int) -> None:
+        """Reseed the Albumentations Compose. Called per-worker.
+
+        Delegates to `set_random_seed()`, which
+        rebuilds an internal `numpy.random.Generator` — Albumentations
+        does not use the legacy global `np.random` module.
+        """
+        self._transform.set_random_seed(seed)
+
+
+def _worker_init_fn(worker_id: int) -> None:
+    """Per-worker reseed for Albumentations augmentations.
+
+    PyTorch's DataLoader already seeds `torch` per worker via `info.seed`. Albumentations keeps its
+    own internal `numpy.random.Generator` (created by `~albumentations.Compose.set_random_seed`).
+    Without that, every worker would emit identical augmentation sequences.
+    """
+    info = torch.utils.data.get_worker_info()
+    if info is None:
+        return
+    ds = info.dataset
+    if hasattr(ds, "set_seed"):
+        ds.set_seed(info.seed)
+
 
 class LoveDADataModule:
     """LoveDA datamodule: download → adapt → transform → loader.
@@ -111,8 +129,8 @@ class LoveDADataModule:
 
     Notes
     -----
-    Call :meth:`prepare_data` once (typically from the trainer's main
-    process) to ensure the dataset is on disk, then :meth:`setup` to
+    Call `prepare_data()` once (typically from the trainer's main
+    process) to ensure the dataset is on disk, then `setup()` to
     instantiate per-split datasets and compute normalization stats.
     DataLoader-building methods are added in a later step.
     """
@@ -141,24 +159,17 @@ class LoveDADataModule:
             checksum=True,
         )
 
-    def setup(self, stage: str | None = None) -> None:
+    def setup(self) -> None:
         """Instantiate per-split datasets and compute normalization stats.
 
         Idempotent: a second call is a no-op.
 
-        Parameters
-        ----------
-        stage : str, optional
-            Mirrors Lightning's ``stage`` argument (``"fit"`` /
-            ``"validate"`` / ``"test"``). Currently unused — all three
-            splits are loaded regardless. Kept for forward compatibility.
-
         Raises
         ------
         torchgeo.datasets.errors.DatasetNotFoundError
-            If the dataset is not on disk. Call :meth:`prepare_data`
-            first to download it (we intentionally pass ``download=False``
-            here so ``setup()`` never silently kicks off a 4 GB transfer).
+            If the dataset is not on disk. Call `prepare_data()`
+            first to download it (we intentionally pass `download=False`
+            here so `setup()` never silently kicks off a 4 GB transfer).
         """
         if self._is_setup:
             return
@@ -201,17 +212,59 @@ class LoveDADataModule:
 
     @property
     def mean(self) -> list[float]:
-        """Per-channel mean computed at :meth:`setup` time, in ``[0, 1]``."""
+        """Per-channel mean computed at `setup()` time, in `[0, 1]`."""
         self._require_setup()
         assert self._mean is not None
         return self._mean
 
     @property
     def std(self) -> list[float]:
-        """Per-channel standard deviation computed at :meth:`setup` time."""
+        """Per-channel standard deviation computed at `setup()` time."""
         self._require_setup()
         assert self._std is not None
         return self._std
+
+    def train_dataloader(self) -> torch.utils.data.DataLoader:
+        """Shuffled, augmented DataLoader over the train split.
+
+        Determinism: shuffling is driven by a torch `Generator` seeded
+        with `cfg.seed`; per-worker augmentation seeding is handled by
+        `_worker_init_fn()`. Together these make every batch
+        reproducible for a given `cfg.seed`.
+        """
+        self._require_setup()
+        assert self.train_ds is not None
+        return torch.utils.data.DataLoader(
+            self.train_ds,
+            batch_size=self.cfg.batch_size,
+            shuffle=True,
+            drop_last=True,
+            num_workers=self.cfg.num_workers,
+            persistent_workers=self.cfg.num_workers > 0,
+            generator=torch.Generator().manual_seed(self.cfg.seed),
+            worker_init_fn=_worker_init_fn,
+        )
+
+    def val_dataloader(self) -> torch.utils.data.DataLoader:
+        """Sequential, non-augmented DataLoader over the val split.
+
+        `drop_last=False` so every val sample contributes to the
+        streaming confusion matrix. The val transform is deterministic
+        (center-crop + normalize) so `worker_init_fn` is not strictly
+        required, but we still pass it for consistency with the train
+        loader.
+        """
+        self._require_setup()
+        assert self.val_ds is not None
+        return torch.utils.data.DataLoader(
+            self.val_ds,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            drop_last=False,
+            num_workers=self.cfg.num_workers,
+            persistent_workers=self.cfg.num_workers > 0,
+            worker_init_fn=_worker_init_fn,
+        )
 
     def _require_setup(self) -> None:
         if not self._is_setup:
