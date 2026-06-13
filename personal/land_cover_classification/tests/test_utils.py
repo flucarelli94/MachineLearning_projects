@@ -56,9 +56,6 @@ def test_compute_channel_stats_per_channel_independent():
 
 
 def test_compute_channel_stats_returns_1d_per_channel():
-    # Catches the axis-reduction bug: with axis=(0, 1) instead of
-    # (0, 1, 2), the result would be (W, C) = (2, 3) and broadcast
-    # silently in np.allclose checks against constant-image inputs.
     img = np.zeros((2, 2, 3), dtype=np.uint8)
     img[:, 1, 0] = 255  # channel 0: left col 0, right col 255
     mean, std = compute_channel_stats([img])
