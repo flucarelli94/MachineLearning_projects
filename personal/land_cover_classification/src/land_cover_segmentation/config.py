@@ -1,7 +1,8 @@
 """Typed configuration for the land-cover segmentation pipeline.
 
-This module is the **single home** for LoveDA-specific values (via
-`DataConfig`) and model architecture knobs (via `ModelConfig`).
+This module is the **single home** for data ingestion parameters (LoveDA-specific, values (via
+`DataConfig`), model architecture design (via `ModelConfig`), and run-level
+settings (via `RunConfig`).
 """
 
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
@@ -116,6 +117,31 @@ class ModelConfig:
 
 
 @dataclass
+class RunConfig:
+    """Configuration for a single training or evaluation run.
+
+    Attributes
+    ----------
+    output_name : str
+        Subdirectory name under ``TrainConfig.ckpt_root`` where the run's
+        checkpoints, logs, and metadata are written.
+    seed : int
+        Global RNG seed for training.
+        Separate from ``DataConfig.seed``, which controls dataloader shuffle and augmentations.
+    deterministic : bool
+        If `True`, prefer reproducible CUDA/cuDNN algorithms over speed.
+    device : str
+        Compute device: ``"auto"`` (CUDA if available, else CPU), ``"cpu"``,
+        or ``"cuda"``.
+    """
+
+    output_name: str = "default"
+    seed: int = 142
+    deterministic: bool = False
+    device: str = "auto"
+
+
+@dataclass
 class Config:
     """Top-level project configuration.
 
@@ -125,10 +151,13 @@ class Config:
         Data layer configuration.
     model : ModelConfig
         Model architecture configuration.
+    run : RunConfig
+        Run-level settings (output directory name, global seed, device).
     """
 
     data: DataConfig = field(default_factory=DataConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
+    run: RunConfig = field(default_factory=RunConfig)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a plain nested `dict` view (suitable for YAML/JSON dump)."""
@@ -227,4 +256,4 @@ def dump(cfg: Config, path: str | Path) -> None:
     p.write_text(yaml.safe_dump(cfg.to_dict(), sort_keys=False))
 
 
-__all__ = ["Config", "DataConfig", "ModelConfig", "load", "dump"]
+__all__ = ["Config", "DataConfig", "ModelConfig", "RunConfig", "load", "dump"]
