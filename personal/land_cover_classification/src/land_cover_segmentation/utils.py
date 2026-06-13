@@ -1,15 +1,19 @@
 """Generic utilities shared across the package.
 
 Filesystem helpers (used by the downloader and, later, the checkpoint
-writer) plus small color helpers used to render label palettes. Kept
-dependency-free so it stays cheap to import from anywhere.
+writer), small color helpers used to render label palettes, and image
+statistics helpers used by the data module at `setup()` time.
 """
 
+import random
+from collections.abc import Sequence
 from pathlib import Path
+
+import numpy as np
 
 
 def human_bytes(n: float) -> str:
-    """Format a byte count as a human-readable string (e.g. ``"3.7 GiB"``)."""
+    """Format a byte count as a human-readable string (e.g. `"3.7 GiB"`)."""
     for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
         if n < 1024 or unit == "TiB":
             return f"{n:.1f} {unit}"
@@ -18,7 +22,7 @@ def human_bytes(n: float) -> str:
 
 
 def dir_size(path: str | Path) -> int:
-    """Total size in bytes of all files under ``path`` (recursive). Missing dirs return 0."""
+    """Total size in bytes of all files under `path` (recursive). Missing dirs return 0."""
     p = Path(path)
     if not p.exists():
         return 0
@@ -26,24 +30,24 @@ def dir_size(path: str | Path) -> int:
 
 
 def hex_to_rgb(h: str) -> tuple[int, int, int]:
-    """Convert a ``"#RRGGBB"`` string to an ``(R, G, B)`` tuple of ints in ``0..255``.
+    """Convert a `"#RRGGBB"` string to an `(R, G, B)` tuple of ints in `0..255`.
 
     Parameters
     ----------
     h : str
-        Hex color string. A leading ``"#"`` is optional; the remaining
+        Hex color string. A leading `"#"` is optional; the remaining
         characters must be exactly 6 hex digits.
 
     Returns
     -------
     tuple[int, int, int]
-        Red, green, blue components in ``0..255``.
+        Red, green, blue components in `0..255`.
 
     Raises
     ------
     ValueError
-        If ``h`` does not contain exactly 6 hex digits (after stripping a
-        leading ``"#"``).
+        If `h` does not contain exactly 6 hex digits (after stripping a
+        leading `"#"`).
     """
     h = h.lstrip("#")
     if len(h) != 6:
@@ -51,4 +55,40 @@ def hex_to_rgb(h: str) -> tuple[int, int, int]:
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
 
-__all__ = ["human_bytes", "dir_size", "hex_to_rgb"]
+def compute_channel_stats(
+    images: Sequence[np.ndarray],
+) -> tuple[list[float], list[float]]:
+    """Per-channel `(mean, std)` over the given images.
+
+    Values are rescaled to `[0, 1]` by dividing by 255 (the function
+    assumes `uint8` input).
+
+    Parameters
+    ----------
+    images : Sequence[np.ndarray]
+        Indexable, sized collection where each item is an `(H, W, C)`
+        `uint8` array.
+
+    Returns
+    -------
+    mean, std : tuple[list[float], list[float]]
+        Per-channel mean and standard deviation in `[0, 1]`,
+        each of length `C`.
+    """
+    if len(images) == 0:
+        raise ValueError("images is empty")
+
+    imgs = np.stack(images)
+    if imgs.dtype != np.uint8:
+        raise ValueError(f"images has dtype {imgs.dtype}; expected uint8")
+    if imgs.ndim != 4:
+        raise ValueError(
+            "images has shape {imgs.shape}; expected 4 dimensions (N, H, W, C)"
+        )
+
+    mean = np.mean(imgs.astype(np.float64) / 255.0, axis=(0, 1))
+    std = np.std(imgs.astype(np.float64) / 255.0, axis=(0, 1))
+    return mean.tolist(), std.tolist()
+
+
+__all__ = ["compute_channel_stats", "dir_size", "hex_to_rgb", "human_bytes"]
