@@ -1,23 +1,7 @@
-"""Typed configuration for the data layer.
+"""Typed configuration for the land-cover segmentation pipeline.
 
-Scope (intentionally minimal): only fields needed to build datasets and
-dataloaders. Model / optimizer / training configuration will be added in a
-later phase as we build those layers — keeping the schema lean now means
-unused config can't drift out of sync with code.
-
-This module is the **single home** for every LoveDA-specific value. Most
-live as :class:`DataConfig` fields and can be overridden via YAML.
-Per-channel normalization statistics (mean / std) are *not* declared
-here — the data module computes them at runtime on a sampled subset of
-the training set and passes them directly into the transforms, so the
-config never carries stale placeholder numbers.
-
-Design notes
-------------
-* No third-party config framework (Hydra/OmegaConf) — pure stdlib + PyYAML.
-* Strict: unknown keys at any nesting level raise `ValueError` so typos
-  like `dta: {root: ...}` fail fast.
-* No type coercion — we trust PyYAML's native parsing.
+This module is the **single home** for LoveDA-specific values (via
+`DataConfig`) and model architecture knobs (via `ModelConfig`).
 """
 
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
@@ -109,19 +93,42 @@ class DataConfig:
 
 
 @dataclass
+class ModelConfig:
+    """Configuration for the segmentation model.
+
+    The factory builds a U-Net via segmentation-models-pytorch.
+
+    Attributes
+    ----------
+    encoder : str
+        Backbone name understood by segmentation-models-pytorch
+        (e.g. `"efficientnet-b0"`, `"resnet34"`).
+    encoder_weights : str or None
+        Pretrained weights for the encoder (`"imagenet"`) or `None` to
+        train from scratch.
+    in_channels : int
+        Number of input image channels. LoveDA RGB uses `3`.
+    """
+
+    encoder: str = "efficientnet-b0"
+    encoder_weights: str | None = "imagenet"
+    in_channels: int = 3
+
+
+@dataclass
 class Config:
     """Top-level project configuration.
-
-    Currently only carries the data layer. Model / optimizer / training
-    sections will be added as those layers come online.
 
     Attributes
     ----------
     data : DataConfig
         Data layer configuration.
+    model : ModelConfig
+        Model architecture configuration.
     """
 
     data: DataConfig = field(default_factory=DataConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a plain nested `dict` view (suitable for YAML/JSON dump)."""
@@ -220,4 +227,4 @@ def dump(cfg: Config, path: str | Path) -> None:
     p.write_text(yaml.safe_dump(cfg.to_dict(), sort_keys=False))
 
 
-__all__ = ["Config", "DataConfig", "load", "dump"]
+__all__ = ["Config", "DataConfig", "ModelConfig", "load", "dump"]
