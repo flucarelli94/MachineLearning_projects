@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "land-cover-classification"
+dynamic = ["version"]
+description = ""
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.hatch.version]
+path = "VERSION"
+pattern = "(?P<version>.*)"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/land_cover_classification"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
