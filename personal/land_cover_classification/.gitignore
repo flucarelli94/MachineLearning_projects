@@ -36,3 +36,11 @@ Thumbs.db
 
 # Project-specific
 *.log
+
+# ML artifacts and data (large, regenerable)
+artifacts/
+data/
+*.pth
+*.pt
+*.ckpt
+.ipynb_checkpoints/
