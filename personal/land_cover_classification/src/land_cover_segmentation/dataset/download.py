@@ -1,15 +1,15 @@
 """Bootstrap the LoveDA dataset.
 
 CLI entry point for downloading the LoveDA dataset. The installed console
-script (see ``[project.scripts]`` in ``pyproject.toml``) is
-``land-cover-seg-download``; ``python -m`` also works since this module
-defines an ``if __name__ == "__main__"`` block.
+script (see `[project.scripts]` in `pyproject.toml`) is
+`land-cover-seg-download`; `python -m` also works since this module
+defines an `if __name__ == "__main__"` block.
 
 Roughly 4 GB total: (train + val + test) × (urban + rural). Subsequent runs
 skip files that already exist on disk.
 
 TorchGeo ships one archive per split; each zip contains both urban and rural.
-The ``--scenes`` / ``scenes`` argument filters verification and sample counts,
+The `--scenes` / `scenes` argument filters verification and sample counts,
 not download size.
 
 Examples
@@ -18,7 +18,7 @@ Default — fetch every split and scene::
 
     uv run land-cover-seg-download
 
-Equivalent ``python -m`` form (handy when the project isn't installed)::
+Equivalent `python -m` form (handy when the project isn't installed)::
 
     uv run python -m land_cover_segmentation.dataset.download
 
@@ -64,7 +64,7 @@ def download_loveda(
     root : pathlib.Path or str, optional
         Destination directory. Created if missing.
     splits : Sequence[str], optional
-        Subset of ``("train", "val", "test")`` whose archives to download.
+        Subset of `("train", "val", "test")` whose archives to download.
         Each split zip contains both urban and rural scene folders.
     scenes : Sequence[str], optional
         Subset of `("urban", "rural")` forwarded to LoveDA. Controls which

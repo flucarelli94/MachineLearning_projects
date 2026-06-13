@@ -36,7 +36,7 @@ def build_train_transform(
     """Training pipeline: random crop + flips/rotations + mild affine + photometric + normalize.
 
     Pixels introduced by affine fill or coarse dropout get the value
-    ``ignore_index`` in the mask so they are skipped by loss and metrics.
+    `ignore_index` in the mask so they are skipped by loss and metrics.
 
     Parameters
     ----------
@@ -44,24 +44,24 @@ def build_train_transform(
         Side length (pixels) of the square crop fed to the model.
     ignore_index : int, keyword-only
         Mask value written wherever augmentation drops pixels. Required
-        — pass ``config.data.ignore_index`` so transforms, loss, and
+        — pass `config.data.ignore_index` so transforms, loss, and
         metrics stay in lockstep.
     mean, std : Sequence[float], keyword-only
-        Per-channel normalization statistics in ``[0, 1]``, mean and
+        Per-channel normalization statistics in `[0, 1]`, mean and
         standard deviation respectively.
     seed : int, keyword-only
         Seeds the Compose's internal RNG so the augmentation *sequence*
         is reproducible across runs while still varying within a run.
         Multi-worker DataLoaders must additionally offset this per
         worker (handled in :class:`LoveDADataModule` via
-        ``worker_init_fn``) to avoid all workers producing identical
+        `worker_init_fn`) to avoid all workers producing identical
         augmentations.
 
     Returns
     -------
     albumentations.Compose
-        A callable taking ``image=HWC uint8`` and ``mask=HW int`` and
-        returning ``image=(3, H, W) float32`` and ``mask=(H, W)`` tensors.
+        A callable taking `image=HWC uint8` and `mask=HW int` and
+        returning `image=(3, H, W) float32` and `mask=(H, W)` tensors.
     """
     return albumentations.Compose(
         [

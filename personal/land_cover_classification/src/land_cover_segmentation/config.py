@@ -15,8 +15,8 @@ config never carries stale placeholder numbers.
 Design notes
 ------------
 * No third-party config framework (Hydra/OmegaConf) — pure stdlib + PyYAML.
-* Strict: unknown keys at any nesting level raise ``ValueError`` so typos
-  like ``dta: {root: ...}`` fail fast.
+* Strict: unknown keys at any nesting level raise `ValueError` so typos
+  like `dta: {root: ...}` fail fast.
 * No type coercion — we trust PyYAML's native parsing.
 """
 
@@ -52,7 +52,7 @@ class DataConfig:
     """Configuration for the data layer (dataset + dataloader).
 
     Only LoveDA is supported, so the dataset identifier is implicit and not
-    a field. ``ignore_index`` is the single source of truth for the "skip
+    a field. `ignore_index` is the single source of truth for the "skip
     this pixel" value used by transforms, loss, and metrics — other modules
     must read it from here rather than redefining it.
 
@@ -61,7 +61,7 @@ class DataConfig:
     root : str
         Filesystem path where the dataset lives (or will be downloaded to).
     scene : list[str]
-        LoveDA scenes to include; subset of ``["urban", "rural"]``.
+        LoveDA scenes to include; subset of `["urban", "rural"]`.
     image_size : int
         Side length (pixels) of the square crops fed to the model.
     batch_size : int
@@ -75,14 +75,14 @@ class DataConfig:
     nodata_label : int
         Label value torchgeo's LoveDA emits for "no-data" pixels (scene
         edges with no annotation). The data module remaps this to
-        ``ignore_index`` before training.
+        `ignore_index` before training.
     seed : int
         RNG seed for shuffling and augmentation. Controls reproducibility.
     classes : list[str]
-        Foreground class names, ordered by integer label. ``num_classes``
+        Foreground class names, ordered by integer label. `num_classes`
         is derived from this list.
     palette : list[str]
-        Hex colors (``"#RRGGBB"``) per class, parallel to ``classes``.
+        Hex colors (`"#RRGGBB"`) per class, parallel to `classes`.
 
     Notes
     -----
@@ -124,7 +124,7 @@ class Config:
     data: DataConfig = field(default_factory=DataConfig)
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a plain nested ``dict`` view (suitable for YAML/JSON dump)."""
+        """Return a plain nested `dict` view (suitable for YAML/JSON dump)."""
         return asdict(self)
 
 
@@ -136,7 +136,7 @@ class Config:
 def _merge_into_dataclass(
     dc_instance: Any, overrides: Mapping[str, Any], path: str
 ) -> Any:
-    """Recursively apply ``overrides`` onto a dataclass instance.
+    """Recursively apply `overrides` onto a dataclass instance.
 
     Returns a *new* dataclass instance (defaults stay untouched). Unknown keys
     raise :class:`ValueError` carrying the full dotted path for the typo.
@@ -177,7 +177,7 @@ def load(path: str | Path) -> Config:
     Parameters
     ----------
     path : str or pathlib.Path
-        Path to a YAML file. An empty file is treated as ``{}`` (all defaults).
+        Path to a YAML file. An empty file is treated as `{}` (all defaults).
 
     Returns
     -------
@@ -204,8 +204,8 @@ def load(path: str | Path) -> Config:
 def dump(cfg: Config, path: str | Path) -> None:
     """Write a fully-resolved :class:`Config` to YAML.
 
-    Parent directories of ``path`` are created if missing. Field order from
-    the dataclasses is preserved (``sort_keys=False``) so the dump stays
+    Parent directories of `path` are created if missing. Field order from
+    the dataclasses is preserved (`sort_keys=False`) so the dump stays
     diff-friendly across runs.
 
     Parameters
