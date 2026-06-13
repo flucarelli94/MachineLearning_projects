@@ -20,7 +20,7 @@ Default — fetch every split and scene::
 
 Equivalent ``python -m`` form (handy when the project isn't installed)::
 
-    uv run python -m land_cover_segmentation.data.download
+    uv run python -m land_cover_segmentation.dataset.download
 
 Custom root, skip checksum verification::
 

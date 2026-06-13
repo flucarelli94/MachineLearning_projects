@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.scripts]
-land-cover-seg-download = "land_cover_segmentation.data.download:main"
+land-cover-seg-download = "land_cover_segmentation.dataset.download:main"
 
 [tool.uv]
 package = true

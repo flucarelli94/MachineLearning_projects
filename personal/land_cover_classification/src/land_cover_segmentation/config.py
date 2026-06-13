@@ -26,9 +26,7 @@ from typing import Any, Mapping
 
 import yaml
 
-# Default LoveDA constants. The class/palette lists are held privately so the
-# dataclass default_factory can just copy them — keeps the dataclass body
-# readable and avoids embedding multi-line literals inside ``lambda``.
+# Default LoveDA constants.
 _LOVEDA_CLASSES: list[str] = [
     "background",
     "building",
