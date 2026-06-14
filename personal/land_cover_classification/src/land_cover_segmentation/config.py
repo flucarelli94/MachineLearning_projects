@@ -258,7 +258,7 @@ def _merge_into_dataclass(
     """Recursively apply `overrides` onto a dataclass instance.
 
     Returns a *new* dataclass instance (defaults stay untouched). Unknown keys
-    raise :class:`ValueError` carrying the full dotted path for the typo.
+    raise `ValueError` carrying the full dotted path for the typo.
     """
     if not is_dataclass(dc_instance):
         raise TypeError(f"{path or '<root>'} is not a dataclass")
@@ -291,7 +291,7 @@ def _merge_into_dataclass(
 
 
 def load(path: str | Path) -> Config:
-    """Load a YAML config file and deep-merge it onto :class:`Config` defaults.
+    """Load a YAML config file and deep-merge it onto `Config` defaults.
 
     Parameters
     ----------
@@ -321,7 +321,7 @@ def load(path: str | Path) -> Config:
 
 
 def dump(cfg: Config, path: str | Path) -> None:
-    """Write a fully-resolved :class:`Config` to YAML.
+    """Write a fully-resolved `Config` to YAML.
 
     Parent directories of `path` are created if missing. Field order from
     the dataclasses is preserved (`sort_keys=False`) so the dump stays

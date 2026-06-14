@@ -1,7 +1,7 @@
 """User-defined segmentation model.
 
 When `ModelConfig.source` is `"custom"`, the model factory imports this
-module and calls :func:`build_model` — the only supported entry point.
+module and calls `build_model` — the only supported entry point.
 
 Edit this file to supply your own architecture. The returned module must emit
 raw logits of shape `(batch, num_classes, height, width)` with

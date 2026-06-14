@@ -55,7 +55,7 @@ def download_loveda(
 ) -> dict[str, int]:
     """Download (or verify) LoveDA for the requested splits.
 
-    Delegates to `~torchgeo.datasets.LoveDA` with `download=True`.
+    Delegates to `torchgeo.datasets.LoveDA` with `download=True`.
     Files already present under `root` are skipped, so this function is
     idempotent and safe to re-run.
 

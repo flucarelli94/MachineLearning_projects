@@ -53,7 +53,7 @@ def build_train_transform(
         Seeds the Compose's internal RNG so the augmentation *sequence*
         is reproducible across runs while still varying within a run.
         Multi-worker DataLoaders must additionally offset this per
-        worker (handled in :class:`LoveDADataModule` via
+        worker (handled in `LoveDADataModule` via
         `worker_init_fn`) to avoid all workers producing identical
         augmentations.
 

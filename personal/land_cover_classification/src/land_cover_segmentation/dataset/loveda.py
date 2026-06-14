@@ -2,9 +2,9 @@
 
 Lifecycle:
 
-* :meth:`LoveDADataModule.prepare_data` — single-process; ensures the
+* `LoveDADataModule.prepare_data` — single-process; ensures the
   LoveDA archives are present on disk (idempotent torchgeo download).
-* :meth:`LoveDADataModule.setup` — per-process; instantiates per-split
+* `LoveDADataModule.setup` — per-process; instantiates per-split
   torchgeo datasets, computes channel normalization statistics on the
   train split, builds train/val transforms with those stats, and wraps
   each split in a `_LoveDAAdapter` so it yields `(image, mask)`
@@ -31,7 +31,7 @@ from land_cover_segmentation.utils import compute_channel_stats
 
 class _ImageView(Sequence):
     """Lazy sequence view of a torchgeo LoveDA dataset's images as HWC
-    `uint8` numpy arrays, for consumption by :func:`compute_channel_stats`.
+    `uint8` numpy arrays, for consumption by `compute_channel_stats`.
 
     Each `__getitem__` call pulls a single sample from the underlying
     dataset (i.e. one PNG decode), so passing this view to the stats
@@ -107,7 +107,8 @@ def _worker_init_fn(worker_id: int) -> None:
     """Per-worker reseed for Albumentations augmentations.
 
     PyTorch's DataLoader already seeds `torch` per worker via `info.seed`. Albumentations keeps its
-    own internal `numpy.random.Generator` (created by `~albumentations.Compose.set_random_seed`).
+    own internal `numpy.random.Generator` (created by
+    `albumentations.Compose.set_random_seed`).
     Without that, every worker would emit identical augmentation sequences.
     """
     info = torch.utils.data.get_worker_info()
