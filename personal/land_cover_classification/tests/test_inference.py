@@ -1,16 +1,33 @@
 """Tests for tiled inference and GeoTIFF export."""
 
+from unittest.mock import MagicMock
+
 import numpy as np
 import rasterio
+import torch
 
-from land_cover_segmentation.config import Config, DataConfig, ModelConfig
+from land_cover_segmentation.config import Config, DataConfig, ModelConfig, RunConfig, dump
+from land_cover_segmentation.engine.checkpoint import CheckpointIO
 from land_cover_segmentation.inference.predict import (
+    load_normalized_scene,
+    predict_run,
     predict_scene,
     reconstruct,
     tile_scene,
 )
 from land_cover_segmentation.inference.write import write_prediction
 from land_cover_segmentation.models.factory import build_model
+
+
+def test_load_normalized_scene_from_geotiff(synthetic_geotiff):
+    image, georef_path = load_normalized_scene(
+        synthetic_geotiff,
+        mean=[0.0, 0.0, 0.0],
+        std=[1.0, 1.0, 1.0],
+    )
+    assert image.shape == (3, 16, 16)
+    assert image.dtype == np.float32
+    assert georef_path == synthetic_geotiff
 
 
 def test_tile_scene_covers_small_image():
@@ -90,3 +107,38 @@ def test_write_prediction_round_trip(tmp_path, synthetic_geotiff):
         assert dst.nodata == 255
         assert dst.read(1)[0, 0] == 1
         assert dst.colormap(1)[1] == (227, 11, 11, 255)
+
+
+def test_predict_run_writes_geotiff(tmp_path, synthetic_geotiff):
+    cfg = Config(
+        data=DataConfig(classes=["a", "b", "c"], image_size=16, batch_size=2),
+        model=ModelConfig(source="custom", in_channels=3),
+        run=RunConfig(device="cpu"),
+    )
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    dump(cfg, run_dir / "config.yaml")
+
+    model = build_model(cfg)
+    datamodule = MagicMock()
+    datamodule.mean = [0.0, 0.0, 0.0]
+    datamodule.std = [1.0, 1.0, 1.0]
+    CheckpointIO(cfg, datamodule, run_dir).save(
+        run_dir / "best.pth",
+        model=model,
+        optimizer=torch.optim.AdamW(model.parameters(), lr=1e-3),
+        epoch=0,
+        val_metrics={"loss": 0.0, "miou": 0.0, "per_class_iou": [0.0, 0.0, 0.0]},
+        best_val_miou=0.0,
+        is_best=True,
+    )
+
+    out_path = tmp_path / "pred.tif"
+    predict_run(run_dir, synthetic_geotiff, out_path)
+
+    assert out_path.exists()
+    with rasterio.open(out_path) as dst:
+        assert dst.count == 1
+        assert dst.crs is not None
+        assert dst.colormap(1) is not None
