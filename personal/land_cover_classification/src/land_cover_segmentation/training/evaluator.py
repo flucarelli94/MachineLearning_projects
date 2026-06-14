@@ -14,9 +14,9 @@ from tqdm import tqdm
 
 from land_cover_segmentation.config import Config
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
-from land_cover_segmentation.engine.checkpoint import CheckpointIO
-from land_cover_segmentation.engine.losses import DiceCELoss
-from land_cover_segmentation.engine.metrics import StreamingConfusionMatrix
+from land_cover_segmentation.training.checkpoint import CheckpointIO
+from land_cover_segmentation.training.losses import DiceCELoss
+from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.utils import seed_everything
 

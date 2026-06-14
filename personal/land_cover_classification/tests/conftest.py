@@ -14,7 +14,7 @@ from land_cover_segmentation.config import (
     RunConfig,
     dump,
 )
-from land_cover_segmentation.engine.checkpoint import CheckpointIO
+from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.models.factory import build_model
 
 

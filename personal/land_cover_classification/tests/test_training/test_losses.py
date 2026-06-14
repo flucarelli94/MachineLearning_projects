@@ -2,7 +2,7 @@
 
 import torch
 
-from land_cover_segmentation.engine.losses import DiceCELoss
+from land_cover_segmentation.training.losses import DiceCELoss
 
 
 def test_dice_ce_loss_forward_and_backward():

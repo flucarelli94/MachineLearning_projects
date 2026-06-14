@@ -5,7 +5,7 @@ import math
 import pytest
 import torch
 
-from land_cover_segmentation.engine.metrics import StreamingConfusionMatrix
+from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 
 
 def test_confusion_matrix_perfect_prediction():

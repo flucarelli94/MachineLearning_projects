@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from land_cover_segmentation.config import Config
-from land_cover_segmentation.engine.checkpoint import CheckpointIO
+from land_cover_segmentation.training.checkpoint import CheckpointIO
 
 
 def test_checkpoint_io_load_run_config_missing_file(tmp_path):

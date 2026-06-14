@@ -18,15 +18,15 @@ from tqdm import tqdm
 
 from land_cover_segmentation.config import Config, dump
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
-from land_cover_segmentation.engine.callbacks import EarlyStopping, JSONLLogger
-from land_cover_segmentation.engine.checkpoint import CheckpointIO
-from land_cover_segmentation.engine.evaluator import (
+from land_cover_segmentation.training.callbacks import EarlyStopping, JSONLLogger
+from land_cover_segmentation.training.checkpoint import CheckpointIO
+from land_cover_segmentation.training.evaluator import (
     evaluate_loader,
     metrics_from_confusion,
     resolve_device,
 )
-from land_cover_segmentation.engine.losses import DiceCELoss
-from land_cover_segmentation.engine.metrics import StreamingConfusionMatrix
+from land_cover_segmentation.training.losses import DiceCELoss
+from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.utils import seed_everything
 
 logging.basicConfig(

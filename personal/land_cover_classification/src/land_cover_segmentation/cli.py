@@ -15,8 +15,8 @@ from land_cover_segmentation.dataset.download import (
     download_loveda,
 )
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
-from land_cover_segmentation.engine.evaluator import Split, evaluate_run
-from land_cover_segmentation.engine.trainer import Trainer
+from land_cover_segmentation.training.evaluator import Split, evaluate_run
+from land_cover_segmentation.training.trainer import Trainer
 from land_cover_segmentation.inference.predict import predict_run
 from land_cover_segmentation.models.factory import build_model
 

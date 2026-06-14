@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from land_cover_segmentation.engine.callbacks import EarlyStopping, JSONLLogger
+from land_cover_segmentation.training.callbacks import EarlyStopping, JSONLLogger
 
 
 def test_early_stopping_stops_after_patience():
