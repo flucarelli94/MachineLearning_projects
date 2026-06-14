@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import time
 from pathlib import Path
 from typing import Any
 
@@ -14,9 +15,13 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from land_cover_segmentation import __version__
 from land_cover_segmentation.config import Config, dump
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
+from land_cover_segmentation.engine.callbacks import (
+    CheckpointWriter,
+    EarlyStopping,
+    JSONLLogger,
+)
 from land_cover_segmentation.engine.losses import DiceCELoss
 from land_cover_segmentation.engine.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.utils import seed_everything
@@ -53,7 +58,7 @@ class Trainer:
         Returns
         -------
         dict
-            Keys: `run_dir`, `best_val_miou`, `epochs_run`.
+            Keys: `run_dir`, `best_val_miou`, `epochs_run`, `stopped_early`.
         """
         seed_everything(self.cfg.run.seed, deterministic=self.cfg.run.deterministic)
         self.run_dir.mkdir(parents=True, exist_ok=True)
@@ -86,10 +91,17 @@ class Trainer:
         scaler = torch.amp.GradScaler(enabled=self.device.type == "cuda")
         autocast_device = self.device.type
 
+        early_stopping = EarlyStopping(patience=self.cfg.train.patience)
+        jsonl_logger = JSONLLogger(self.run_dir / "run.jsonl")
+        checkpoint_writer = CheckpointWriter(self.cfg, self.datamodule, self.run_dir)
+
         best_val_miou = float("-inf")
         epochs_run = 0
+        stopped_early = False
+        fit_start = time.perf_counter()
 
         for epoch in range(self.cfg.train.epochs):
+            epoch_start = time.perf_counter()
             epochs_run = epoch + 1
             train_metrics = self._train_epoch(
                 train_loader,
@@ -103,21 +115,40 @@ class Trainer:
             scheduler.step()
 
             val_miou = val_metrics["miou"]
-            if val_miou > best_val_miou:
+            is_best = val_miou > best_val_miou
+            if is_best:
                 best_val_miou = val_miou
-                self._save_checkpoint(
-                    path=self.run_dir / "best.pth",
-                    epoch=epoch,
+                checkpoint_writer.save(
+                    self.run_dir / "best.pth",
+                    model=self.model,
                     optimizer=optimizer,
+                    epoch=epoch,
+                    val_metrics=val_metrics,
                     best_val_miou=best_val_miou,
+                    is_best=True,
                 )
-            self._save_checkpoint(
-                path=self.run_dir / "last.pth",
-                epoch=epoch,
+            checkpoint_writer.save(
+                self.run_dir / "last.pth",
+                model=self.model,
                 optimizer=optimizer,
+                epoch=epoch,
+                val_metrics=val_metrics,
                 best_val_miou=best_val_miou,
             )
 
+            lrs = [group["lr"] for group in optimizer.param_groups]
+            jsonl_logger.log(
+                {
+                    "epoch": epoch + 1,
+                    "train_loss": train_metrics["loss"],
+                    "val_loss": val_metrics["loss"],
+                    "train_miou": train_metrics["miou"],
+                    "val_miou": val_metrics["miou"],
+                    "lr": lrs,
+                    "elapsed_s": time.perf_counter() - epoch_start,
+                    "per_class_iou": val_metrics["per_class_iou"],
+                }
+            )
             _log_epoch(
                 epoch=epoch,
                 train_metrics=train_metrics,
@@ -125,10 +156,16 @@ class Trainer:
                 optimizer=optimizer,
             )
 
+            if early_stopping.step(val_miou):
+                stopped_early = True
+                break
+
         return {
             "run_dir": self.run_dir,
             "best_val_miou": best_val_miou,
             "epochs_run": epochs_run,
+            "stopped_early": stopped_early,
+            "elapsed_s": time.perf_counter() - fit_start,
         }
 
     def _train_epoch(
@@ -139,7 +176,7 @@ class Trainer:
         scaler: torch.amp.GradScaler,
         autocast_device: str,
         epoch: int,
-    ) -> dict[str, float]:
+    ) -> dict[str, Any]:
         self.model.train()
         cm = StreamingConfusionMatrix(
             self.cfg.data.num_classes, self.cfg.data.ignore_index
@@ -175,12 +212,7 @@ class Trainer:
             cm.update(preds, masks)
             pbar.set_postfix(loss=f"{loss.item():.4f}")
 
-        metrics = cm.compute()
-        return {
-            "loss": loss_sum / max(num_batches, 1),
-            "miou": metrics["miou"].item(),
-            "pixel_acc": metrics["pixel_acc"].item(),
-        }
+        return _metrics_dict(cm, loss_sum / max(num_batches, 1))
 
     @torch.no_grad()
     def _validate_epoch(
@@ -188,7 +220,7 @@ class Trainer:
         loader: DataLoader,
         loss_fn: DiceCELoss,
         autocast_device: str,
-    ) -> dict[str, float]:
+    ) -> dict[str, Any]:
         self.model.eval()
         cm = StreamingConfusionMatrix(
             self.cfg.data.num_classes, self.cfg.data.ignore_index
@@ -211,30 +243,20 @@ class Trainer:
             num_batches += 1
             cm.update(logits.argmax(dim=1), masks)
 
-        metrics = cm.compute()
-        return {
-            "loss": loss_sum / max(num_batches, 1),
-            "miou": metrics["miou"].item(),
-            "pixel_acc": metrics["pixel_acc"].item(),
-        }
+        return _metrics_dict(cm, loss_sum / max(num_batches, 1))
 
-    def _save_checkpoint(
-        self,
-        path: Path,
-        epoch: int,
-        optimizer: torch.optim.Optimizer,
-        best_val_miou: float,
-    ) -> None:
-        payload = {
-            "epoch": epoch,
-            "model_state_dict": self.model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "best_val_miou": best_val_miou,
-            "mean": self.datamodule.mean,
-            "std": self.datamodule.std,
-            "package_version": __version__,
-        }
-        torch.save(payload, path)
+
+def _metrics_dict(cm: StreamingConfusionMatrix, loss: float) -> dict[str, Any]:
+    metrics = cm.compute()
+    per_class_iou = metrics["per_class_iou"].tolist()
+    return {
+        "loss": loss,
+        "miou": metrics["miou"].item(),
+        "pixel_acc": metrics["pixel_acc"].item(),
+        "per_class_iou": [
+            None if isinstance(v, float) and math.isnan(v) else v for v in per_class_iou
+        ],
+    }
 
 
 def _resolve_device(device: str) -> torch.device:
@@ -346,8 +368,8 @@ def _class_pixel_counts(cfg: Config, datamodule: LoveDADataModule) -> torch.Tens
 
 def _log_epoch(
     epoch: int,
-    train_metrics: dict[str, float],
-    val_metrics: dict[str, float],
+    train_metrics: dict[str, Any],
+    val_metrics: dict[str, Any],
     optimizer: torch.optim.Optimizer,
 ) -> None:
     lrs = [group["lr"] for group in optimizer.param_groups]
