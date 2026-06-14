@@ -7,7 +7,7 @@ Lifecycle:
 * :meth:`LoveDADataModule.setup` — per-process; instantiates per-split
   torchgeo datasets, computes channel normalization statistics on the
   train split, builds train/val transforms with those stats, and wraps
-  each split in a ``_LoveDAAdapter`` so it yields ``(image, mask)``
+  each split in a `_LoveDAAdapter` so it yields `(image, mask)`
   tuples ready for a DataLoader.
 """
 
@@ -31,9 +31,9 @@ from land_cover_segmentation.utils import compute_channel_stats
 
 class _ImageView(Sequence):
     """Lazy sequence view of a torchgeo LoveDA dataset's images as HWC
-    ``uint8`` numpy arrays, for consumption by :func:`compute_channel_stats`.
+    `uint8` numpy arrays, for consumption by :func:`compute_channel_stats`.
 
-    Each ``__getitem__`` call pulls a single sample from the underlying
+    Each `__getitem__` call pulls a single sample from the underlying
     dataset (i.e. one PNG decode), so passing this view to the stats
     helper never materializes all images.
     """
@@ -53,18 +53,18 @@ class _ImageView(Sequence):
 class _LoveDAAdapter(torch.utils.data.Dataset):
     """Wrap a torchgeo LoveDA split with an Albumentations pipeline.
 
-    Converts torchgeo's dict items (image as ``(C, H, W)`` ``uint8``
-    tensor, mask as ``(H, W)`` integer tensor) into the trainer-facing
-    ``(image, mask)`` tuple contract:
+    Converts torchgeo's dict items (image as `(C, H, W)` `uint8`
+    tensor, mask as `(H, W)` integer tensor) into the trainer-facing
+    `(image, mask)` tuple contract:
 
-    * ``image``: ``(3, H, W)`` ``float32`` torch tensor, normalized.
-    * ``mask``:  ``(H, W)`` ``int64`` torch tensor with values in
-      ``0..num_classes-1`` or ``ignore_index``.
+    * `image`: `(3, H, W)` `float32` torch tensor, normalized.
+    * `mask`:  `(H, W)` `int64` torch tensor with values in
+      `0..num_classes-1` or `ignore_index`.
 
-    Single source of truth for the ``nodata_label → ignore_index`` remap:
+    Single source of truth for the `nodata_label → ignore_index` remap:
     the remap happens **before** the augmentation pipeline so any pixels
     later filled by affine / coarse-dropout (which also write
-    ``ignore_index``) stay consistent with naturally-occurring nodata.
+    `ignore_index`) stay consistent with naturally-occurring nodata.
     """
 
     def __init__(

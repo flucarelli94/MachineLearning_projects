@@ -1,11 +1,11 @@
 """User-defined segmentation model.
 
-When ``ModelConfig.source`` is ``"custom"``, the model factory imports this
+When `ModelConfig.source` is `"custom"`, the model factory imports this
 module and calls :func:`build_model` — the only supported entry point.
 
 Edit this file to supply your own architecture. The returned module must emit
-raw logits of shape ``(batch, num_classes, height, width)`` with
-``num_classes = cfg.data.num_classes``.
+raw logits of shape `(batch, num_classes, height, width)` with
+`num_classes = cfg.data.num_classes`.
 """
 
 from __future__ import annotations
@@ -21,14 +21,14 @@ def build_model(cfg: Config) -> nn.Module:
     Parameters
     ----------
     cfg : Config
-        Full project configuration. Read ``cfg.data.num_classes``,
-        ``cfg.model.in_channels``, etc.
+        Full project configuration. Read `cfg.data.num_classes`,
+        `cfg.model.in_channels`, etc.
 
     Returns
     -------
     nn.Module
-        Network producing multiclass logits ``(B, C, H, W)`` with ``C ==
-        cfg.data.num_classes`` (no softmax).
+        Network producing multiclass logits `(B, C, H, W)` with `C ==
+        cfg.data.num_classes` (no softmax).
 
     Raises
     ------
