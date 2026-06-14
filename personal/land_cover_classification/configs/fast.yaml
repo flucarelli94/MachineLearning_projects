@@ -1,0 +1,20 @@
+# CPU smoke profile — small crops, lightweight encoder, few epochs.
+
+data:
+  image_size: 256
+  batch_size: 4
+  num_workers: 0
+
+model:
+  source: smp
+  encoder: mobilenet_v2
+  encoder_weights: null
+  in_channels: 3
+
+run:
+  device: cpu
+  output_name: fast
+
+train:
+  epochs: 5
+  patience: 3

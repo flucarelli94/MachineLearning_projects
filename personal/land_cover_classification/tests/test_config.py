@@ -1,6 +1,7 @@
 """Tests for config dataclasses and strict YAML load/dump."""
 
 from dataclasses import asdict
+import os
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,8 @@ from land_cover_segmentation.config import (
     dump,
     load,
 )
+
+CONFIGS_DIR = Path(__file__).resolve().parents[1] / "configs"
 
 
 def test_run_config_keys():
@@ -178,3 +181,22 @@ def test_dump_round_trip_preserves_model(tmp_path: Path):
     assert loaded.model.encoder == "mobilenet_v2"
     assert loaded.model.encoder_weights is None
     assert loaded.data.root == config.data.root
+
+
+@pytest.mark.parametrize("profile", os.listdir(CONFIGS_DIR))
+def test_config_profile_loads(profile):
+    cfg = load(CONFIGS_DIR / profile)
+    assert isinstance(cfg.data.image_size, int)
+    assert cfg.data.image_size > 0
+    assert isinstance(cfg.data.batch_size, int)
+    assert cfg.data.batch_size > 0
+    assert isinstance(cfg.data.num_workers, int)
+    assert cfg.data.num_workers >= 0
+    assert isinstance(cfg.model.encoder, str)
+    assert cfg.run.device in ["cpu", "cuda", "auto"]
+    assert isinstance(cfg.run.output_name, str)
+    assert isinstance(cfg.train.epochs, int)
+    assert cfg.train.epochs > 0
+    assert isinstance(cfg.train.patience, int)
+    assert cfg.train.patience > 0
+    assert cfg.train.patience < cfg.train.epochs
