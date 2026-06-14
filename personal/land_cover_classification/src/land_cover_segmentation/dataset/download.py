@@ -1,6 +1,6 @@
 """Bootstrap the LoveDA dataset.
 
-Download via the CLI: ``uv run cls data download``.
+Download via the CLI: ``uv run lcs data download``.
 
 This module exposes ``download_loveda()`` for programmatic use. The Click
 command lives in ``land_cover_segmentation.cli``.
@@ -16,15 +16,15 @@ Examples
 --------
 Default — fetch every split and scene::
 
-    uv run cls data download
+    uv run lcs data download
 
 Custom root, skip checksum verification::
 
-    uv run cls data download --root ./data/loveda --no-checksum
+    uv run lcs data download --root ./data/loveda --no-checksum
 
 Subset of splits (the option is repeatable)::
 
-    uv run cls data download --splits train --splits val
+    uv run lcs data download --splits train --splits val
 """
 
 from collections.abc import Sequence

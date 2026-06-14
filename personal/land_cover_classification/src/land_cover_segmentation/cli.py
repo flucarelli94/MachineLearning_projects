@@ -22,7 +22,7 @@ from land_cover_segmentation.models.factory import build_model
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
-def cls() -> None:
+def lcs() -> None:
     """Land cover segmentation tools."""
 
 
@@ -170,8 +170,8 @@ def download(
     )
 
 
-cls.add_command(model)
-cls.add_command(data)
+lcs.add_command(model)
+lcs.add_command(data)
 
 
-__all__ = ["cls", "data", "download", "evaluate", "model", "predict", "train"]
+__all__ = ["data", "download", "evaluate", "lcs", "model", "predict", "train"]

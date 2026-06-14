@@ -19,7 +19,7 @@ pip install .
 ```
 
 Run this from the project root after cloning or unpacking the source. This registers the
-`cls` console script on your `PATH` inside the virtual environment.
+`lcs` console script on your `PATH` inside the virtual environment.
 
 To reinstall after pulling updates: `pip install .` again (or `pip install --upgrade .`).
 
@@ -53,7 +53,7 @@ If you use [uv](https://docs.astral.sh/uv/) for development:
 uv sync
 ```
 
-Then prefix commands below with `uv run` (e.g. `uv run cls data download`).
+Then prefix commands below with `uv run` (e.g. `uv run lcs data download`).
 
 ## Download the dataset
 
@@ -64,17 +64,17 @@ LoveDA is fetched through TorchGeo. A full download (train, val, and test splits
 Stores data under `./data/loveda` (matching the default in `config.py`):
 
 ```bash
-cls data download
+lcs data download
 ```
 
-With uv: `uv run cls data download`
+With uv: `uv run lcs data download`
 
 On success, the CLI prints per-split sample counts and the total size on disk.
 
 ### Custom destination
 
 ```bash
-cls data download --root /path/to/loveda
+lcs data download --root /path/to/loveda
 ```
 
 If you change the root, set the same path in your config YAML under `data.root`.
@@ -84,7 +84,7 @@ If you change the root, set the same path in your config YAML under `data.root`.
 Useful while iterating — each split is a separate archive:
 
 ```bash
-cls data download --splits train --splits val
+lcs data download --splits train --splits val
 ```
 
 Allowed splits: `train`, `val`, `test`.
@@ -96,16 +96,16 @@ directories are verified and counted; it does **not** reduce download size (Torc
 fetches the full split archive):
 
 ```bash
-cls data download --scenes urban
+lcs data download --scenes urban
 ```
 
 ### Skip checksum verification
 
 ```bash
-cls data download --no-checksum
+lcs data download --no-checksum
 ```
 
-Run `cls data download --help` for all options.
+Run `lcs data download --help` for all options.
 
 ### Notes
 
