@@ -1,1 +1,1 @@
-"""Data layer: dataset download, transforms, and (later) the datamodule."""
+"""Data layer: dataset download, augmentation, and the datamodule."""

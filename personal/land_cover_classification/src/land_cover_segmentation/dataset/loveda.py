@@ -22,9 +22,9 @@ from torchgeo.datasets import LoveDA
 
 from land_cover_segmentation.config import DataConfig
 from land_cover_segmentation.dataset.download import download_loveda
-from land_cover_segmentation.dataset.transforms import (
-    build_train_transform,
-    build_val_transform,
+from land_cover_segmentation.dataset.augmentation import (
+    build_train_augmentation,
+    build_val_augmentation,
 )
 from land_cover_segmentation.utils import compute_channel_stats
 
@@ -185,14 +185,14 @@ class LoveDADataModule:
 
         self._mean, self._std = compute_channel_stats(_ImageView(self._train_ds_raw))
 
-        train_transform = build_train_transform(
+        train_transform = build_train_augmentation(
             image_size=self.cfg.image_size,
             ignore_index=self.cfg.ignore_index,
             mean=self._mean,
             std=self._std,
             seed=self.cfg.seed,
         )
-        val_transform = build_val_transform(
+        val_transform = build_val_augmentation(
             image_size=self.cfg.image_size,
             mean=self._mean,
             std=self._std,

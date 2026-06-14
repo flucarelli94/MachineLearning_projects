@@ -2,8 +2,8 @@
 
 Two factory functions:
 
-* `build_train_transform` — geometric + photometric augmentation.
-* `build_val_transform`   — deterministic crop + normalize.
+* `build_train_augmentation` — geometric + photometric augmentation.
+* `build_val_augmentation`   — deterministic crop + normalize.
 
 Contract (the datamodule honors it on both ends):
 
@@ -25,7 +25,7 @@ from collections.abc import Sequence
 import albumentations
 
 
-def build_train_transform(
+def build_train_augmentation(
     image_size: int,
     *,
     ignore_index: int,
@@ -106,7 +106,7 @@ def build_train_transform(
     )
 
 
-def build_val_transform(
+def build_val_augmentation(
     image_size: int,
     *,
     mean: Sequence[float],
@@ -128,7 +128,7 @@ def build_val_transform(
     Returns
     -------
     albumentations.Compose
-        A callable with the same input/output contract as `build_train_transform`.
+        A callable with the same input/output contract as `build_train_augmentation`.
     """
     return albumentations.Compose(
         [
@@ -141,4 +141,4 @@ def build_val_transform(
     )
 
 
-__all__ = ["build_train_transform", "build_val_transform"]
+__all__ = ["build_train_augmentation", "build_val_augmentation"]

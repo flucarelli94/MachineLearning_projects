@@ -8,9 +8,9 @@ from land_cover_segmentation.dataset.loveda import (
     LoveDADataModule,
     _LoveDAAdapter,
 )
-from land_cover_segmentation.dataset.transforms import (
-    build_train_transform,
-    build_val_transform,
+from land_cover_segmentation.dataset.augmentation import (
+    build_train_augmentation,
+    build_val_augmentation,
 )
 
 
@@ -60,14 +60,14 @@ def datamodule_with_fake_adapters(request):
             }
             for _ in range(n_items)
         ]
-        train_t = build_train_transform(
+        train_t = build_train_augmentation(
             image_size=image_size,
             ignore_index=cfg.ignore_index,
             mean=[0.5] * 3,
             std=[0.5] * 3,
             seed=cfg.seed,
         )
-        val_t = build_val_transform(
+        val_t = build_val_augmentation(
             image_size=image_size, mean=[0.5] * 3, std=[0.5] * 3
         )
         dm.train_ds = _LoveDAAdapter(

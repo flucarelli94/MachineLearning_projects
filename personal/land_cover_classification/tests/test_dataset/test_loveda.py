@@ -15,14 +15,14 @@ from land_cover_segmentation.dataset.loveda import (
     LoveDADataModule,
     _LoveDAAdapter,
 )
-from land_cover_segmentation.dataset.transforms import (
-    build_train_transform,
-    build_val_transform,
+from land_cover_segmentation.dataset.augmentation import (
+    build_train_augmentation,
+    build_val_augmentation,
 )
 
 
 class TestLoveDAAdapter:
-    val_transform = build_val_transform(image_size=64, mean=[0.5] * 3, std=[0.5] * 3)
+    val_transform = build_val_augmentation(image_size=64, mean=[0.5] * 3, std=[0.5] * 3)
     image = torch.zeros((3, 64, 64), dtype=torch.uint8)
     mask = staticmethod(
         lambda mask_value: torch.full((64, 64), mask_value, dtype=torch.long)
@@ -119,7 +119,7 @@ def test_adapter_set_seed_changes_augmentation_output(fake_split):
             }
         ]
     )
-    transform = build_train_transform(
+    transform = build_train_augmentation(
         image_size=32, ignore_index=255, mean=[0.5] * 3, std=[0.5] * 3, seed=0
     )
     adapter = _LoveDAAdapter(ds, transform, nodata_label=7, ignore_index=255)
