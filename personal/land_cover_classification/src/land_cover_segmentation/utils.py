@@ -1,14 +1,17 @@
 """Generic utilities shared across the package.
 
 Filesystem helpers (used by the downloader and, later, the checkpoint
-writer), small color helpers used to render label palettes, and image
-statistics helpers used by the data module at `setup()` time.
+writer), small color helpers used to render label palettes, image
+statistics helpers used by the data module at `setup()` time, and
+deterministic seeding for training runs.
 """
 
+import random
 from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
+import torch
 
 
 def human_bytes(n: float) -> str:
@@ -92,4 +95,31 @@ def compute_channel_stats(
     return mean.tolist(), std.tolist()
 
 
-__all__ = ["compute_channel_stats", "dir_size", "hex_to_rgb", "human_bytes"]
+def seed_everything(seed: int, *, deterministic: bool = False) -> None:
+    """Seed Python, NumPy, and PyTorch RNGs for reproducible training.
+
+    Parameters
+    ----------
+    seed : int
+        Global seed written to `random`, `numpy`, and `torch`.
+    deterministic : bool, optional
+        When `True`, prefer deterministic cuDNN kernels over faster
+        non-deterministic ones.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if deterministic:
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
+__all__ = [
+    "compute_channel_stats",
+    "dir_size",
+    "hex_to_rgb",
+    "human_bytes",
+    "seed_everything",
+]
