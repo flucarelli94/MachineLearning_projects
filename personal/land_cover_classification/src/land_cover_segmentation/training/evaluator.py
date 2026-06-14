@@ -18,16 +18,9 @@ from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.training.losses import DiceCELoss
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.models.factory import build_model
-from land_cover_segmentation.utils import seed_everything
+from land_cover_segmentation.utils import resolve_device, seed_everything
 
 Split = Literal["val", "test"]
-
-
-def resolve_device(device: str) -> torch.device:
-    """Map a config device string to a `torch.device`."""
-    if device == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return torch.device(device)
 
 
 def metrics_from_confusion(
@@ -166,5 +159,4 @@ __all__ = [
     "evaluate_loader",
     "evaluate_run",
     "metrics_from_confusion",
-    "resolve_device",
 ]

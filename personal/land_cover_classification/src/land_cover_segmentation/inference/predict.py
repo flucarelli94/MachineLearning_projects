@@ -12,9 +12,9 @@ import torch.nn as nn
 from torch.nn.functional import softmax
 
 from land_cover_segmentation.training.checkpoint import CheckpointIO
-from land_cover_segmentation.training.evaluator import resolve_device
 from land_cover_segmentation.inference.write import write_prediction
 from land_cover_segmentation.models.factory import build_model
+from land_cover_segmentation.utils import resolve_device
 
 
 def _gaussian_kernel(size: int, sigma_ratio: float = 0.25) -> np.ndarray:

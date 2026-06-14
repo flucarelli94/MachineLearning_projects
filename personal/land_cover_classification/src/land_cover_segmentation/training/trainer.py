@@ -23,11 +23,10 @@ from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.training.evaluator import (
     evaluate_loader,
     metrics_from_confusion,
-    resolve_device,
 )
 from land_cover_segmentation.training.losses import DiceCELoss
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
-from land_cover_segmentation.utils import seed_everything
+from land_cover_segmentation.utils import resolve_device, seed_everything
 
 logging.basicConfig(
     level=logging.INFO,

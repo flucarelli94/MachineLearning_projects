@@ -116,10 +116,30 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
         torch.backends.cudnn.benchmark = False
 
 
+def resolve_device(device: str) -> torch.device:
+    """Map a config device string to a `torch.device`.
+
+    Parameters
+    ----------
+    device : str
+        One of ``"auto"``, ``"cpu"``, or ``"cuda"``. ``"auto"`` selects
+        CUDA when available, otherwise CPU.
+
+    Returns
+    -------
+    torch.device
+        Resolved compute device.
+    """
+    if device == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(device)
+
+
 __all__ = [
     "compute_channel_stats",
     "dir_size",
     "hex_to_rgb",
     "human_bytes",
+    "resolve_device",
     "seed_everything",
 ]
