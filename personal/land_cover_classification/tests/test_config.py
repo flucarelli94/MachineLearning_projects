@@ -31,6 +31,11 @@ def test_run_config_keys():
     }
 
 
+def test_run_config_rejects_unknown_device():
+    with pytest.raises(ValueError, match="run.device"):
+        RunConfig(device="gpu")
+
+
 def test_model_config_keys():
     model_config = ModelConfig()
     assert set(asdict(model_config).keys()) == {
@@ -39,6 +44,11 @@ def test_model_config_keys():
         "encoder_weights",
         "in_channels",
     }
+
+
+def test_model_config_rejects_unknown_source():
+    with pytest.raises(ValueError, match="model.source"):
+        ModelConfig(source="unknown")
 
 
 def test_config_keys():
@@ -64,9 +74,19 @@ def test_optim_config_keys():
     }
 
 
+def test_optim_config_rejects_unknown_name():
+    with pytest.raises(ValueError, match="optim.name"):
+        OptimConfig(name="sgd")
+
+
 def test_loss_config_keys():
     loss = LossConfig()
     assert set(asdict(loss).keys()) == {"name", "use_class_weights"}
+
+
+def test_loss_config_rejects_unknown_name():
+    with pytest.raises(ValueError, match="loss.name"):
+        LossConfig(name="ce")
 
 
 def test_train_config_keys():
@@ -117,6 +137,13 @@ class TestLoad:
             load(yaml_path)
 
     @staticmethod
+    def test_rejects_unknown_run_device(tmp_path: Path):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text("run:\n  device: gpu\n")
+        with pytest.raises(ValueError, match="run.device"):
+            load(yaml_path)
+
+    @staticmethod
     def test_applies_train_optim_loss_overrides(tmp_path: Path):
         yaml_path = tmp_path / "cfg.yaml"
         yaml_path.write_text(
@@ -137,6 +164,27 @@ class TestLoad:
         yaml_path = tmp_path / "bad.yaml"
         yaml_path.write_text("train:\n  epocs: 5\n")
         with pytest.raises(ValueError, match="train.epocs"):
+            load(yaml_path)
+
+    @staticmethod
+    def test_rejects_unknown_optim_name(tmp_path: Path):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text("optim:\n  name: sgd\n")
+        with pytest.raises(ValueError, match="optim.name"):
+            load(yaml_path)
+
+    @staticmethod
+    def test_rejects_unknown_loss_name(tmp_path: Path):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text("loss:\n  name: ce\n")
+        with pytest.raises(ValueError, match="loss.name"):
+            load(yaml_path)
+
+    @staticmethod
+    def test_rejects_unknown_model_source(tmp_path: Path):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text("model:\n  source: unknown\n")
+        with pytest.raises(ValueError, match="model.source"):
             load(yaml_path)
 
     @staticmethod

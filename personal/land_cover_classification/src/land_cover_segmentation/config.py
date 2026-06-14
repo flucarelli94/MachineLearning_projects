@@ -123,6 +123,12 @@ class ModelConfig:
     encoder_weights: str | None = "imagenet"
     in_channels: int = 3
 
+    def __post_init__(self) -> None:
+        if self.source not in ("smp", "custom"):
+            raise ValueError(
+                f"Unsupported model.source {self.source!r}; expected 'smp' or 'custom'."
+            )
+
 
 @dataclass
 class RunConfig:
@@ -147,6 +153,12 @@ class RunConfig:
     seed: int = 142
     deterministic: bool = False
     device: str = "auto"
+
+    def __post_init__(self) -> None:
+        if self.device not in ("auto", "cpu", "cuda"):
+            raise ValueError(
+                f"Unsupported run.device {self.device!r}; expected 'auto', 'cpu', or 'cuda'."
+            )
 
 
 @dataclass
@@ -175,6 +187,10 @@ class OptimConfig:
     encoder_lr_scale: float = 0.1
     encoder_lr_warmup_epochs: int = 5
 
+    def __post_init__(self) -> None:
+        if self.name != "adamw":
+            raise ValueError(f"Unsupported optim.name {self.name!r}; expected 'adamw'.")
+
 
 @dataclass
 class LossConfig:
@@ -190,6 +206,12 @@ class LossConfig:
 
     name: str = "dice_ce"
     use_class_weights: bool = True
+
+    def __post_init__(self) -> None:
+        if self.name != "dice_ce":
+            raise ValueError(
+                f"Unsupported loss.name {self.name!r}; expected 'dice_ce'."
+            )
 
 
 @dataclass

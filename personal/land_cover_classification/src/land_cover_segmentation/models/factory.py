@@ -24,11 +24,6 @@ def build_model(cfg: Config) -> nn.Module:
     -------
     nn.Module
         Segmentation model.
-
-    Raises
-    ------
-    ValueError
-        If `cfg.model.source` is not `"smp"` or `"custom"`.
     """
     if cfg.model.source == "smp":
         return smp.Unet(
@@ -38,11 +33,7 @@ def build_model(cfg: Config) -> nn.Module:
             classes=cfg.data.num_classes,
             activation=None,
         )
-    if cfg.model.source == "custom":
-        return custom_model.build_model(cfg)
-    raise ValueError(
-        f"Unknown model.source {cfg.model.source!r}; expected 'smp' or 'custom'."
-    )
+    return custom_model.build_model(cfg)
 
 
 __all__ = ["build_model"]

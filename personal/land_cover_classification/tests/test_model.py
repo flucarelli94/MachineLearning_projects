@@ -1,6 +1,5 @@
 """Tests for model construction and forward pass."""
 
-import pytest
 import torch
 
 from land_cover_segmentation.config import Config, DataConfig, ModelConfig
@@ -51,9 +50,3 @@ def test_factory_smp_forward_shape():
     model = build_model(cfg)
     x = torch.randn(2, 3, 64, 64)
     assert model(x).shape == (2, 3, 64, 64)
-
-
-def test_factory_rejects_unknown_source():
-    cfg = Config(model=ModelConfig(source="unknown"))
-    with pytest.raises(ValueError, match="Unknown model.source"):
-        build_model(cfg)
