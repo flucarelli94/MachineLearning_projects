@@ -1,7 +1,6 @@
 """Tests for checkpoint I/O."""
 
 import json
-from unittest.mock import MagicMock
 
 import pytest
 import torch
@@ -16,12 +15,10 @@ def test_checkpoint_io_load_run_config_missing_file(tmp_path):
         CheckpointIO.load_run_config(tmp_path)
 
 
-def test_checkpoint_io_writes_pth_and_meta(tmp_path):
+def test_checkpoint_io_writes_pth_and_meta(stub_data_module_cls, tmp_path):
     model = nn.Linear(4, 2)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-    datamodule = MagicMock()
-    datamodule.mean = [0.1, 0.2, 0.3]
-    datamodule.std = [0.9, 0.8, 0.7]
+    datamodule = stub_data_module_cls(mean=[0.1, 0.2, 0.3], std=[0.9, 0.8, 0.7])
 
     checkpoint_io = CheckpointIO(Config(), datamodule, tmp_path)
     ckpt_path = tmp_path / "best.pth"
