@@ -31,6 +31,7 @@ def test_run_config_keys():
 def test_model_config_keys():
     model_config = ModelConfig()
     assert set(asdict(model_config).keys()) == {
+        "source",
         "encoder",
         "encoder_weights",
         "in_channels",
@@ -134,6 +135,14 @@ class TestLoad:
         yaml_path.write_text("train:\n  epocs: 5\n")
         with pytest.raises(ValueError, match="train.epocs"):
             load(yaml_path)
+
+    @staticmethod
+    def test_applies_model_source_custom(tmp_path: Path):
+        yaml_path = tmp_path / "cfg.yaml"
+        yaml_path.write_text("model:\n  source: custom\n")
+        cfg = load(yaml_path)
+        assert cfg.model.source == "custom"
+        assert cfg.model.encoder == "efficientnet-b0"
 
     @staticmethod
     def test_applies_overrides(tmp_path: Path):

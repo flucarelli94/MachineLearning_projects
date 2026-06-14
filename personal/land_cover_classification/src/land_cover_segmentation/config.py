@@ -97,20 +97,28 @@ class DataConfig:
 class ModelConfig:
     """Configuration for the segmentation model.
 
-    The factory builds a U-Net via segmentation-models-pytorch.
+    `source` selects which builder `land_cover_segmentation.models.factory.build_model`
+    uses:
+
+    * `"smp"` (default) — U-Net via segmentation-models-pytorch; `encoder`, `encoder_weights`,
+        and `in_channels` apply.
+    * `"custom"` — calls `build_model` in `land_cover_segmentation.models.custom_model`
+        (fixed module path and function name; not configurable).
 
     Attributes
     ----------
+    source : str
+        `"smp"` (segmentation_models.pytorch) or `"custom"`.
     encoder : str
-        Backbone name understood by segmentation-models-pytorch
-        (e.g. `"efficientnet-b0"`, `"resnet34"`).
+        Backbone name for the built-in smp U-Net (e.g. `"efficientnet-b0"`, `"resnet34"`).
+        Ignored when `source="custom"`.
     encoder_weights : str or None
-        Pretrained weights for the encoder (`"imagenet"`) or `None` to
-        train from scratch.
+        Pretrained encoder weights (`"imagenet"`) or `None`. Ignored when `source="custom"`.
     in_channels : int
-        Number of input image channels. LoveDA RGB uses `3`.
+        Input image channels. LoveDA RGB uses `3`.
     """
 
+    source: str = "smp"
     encoder: str = "efficientnet-b0"
     encoder_weights: str | None = "imagenet"
     in_channels: int = 3
@@ -123,16 +131,16 @@ class RunConfig:
     Attributes
     ----------
     output_name : str
-        Subdirectory name under ``TrainConfig.artifacts_root`` where the run's
+        Subdirectory name under `TrainConfig.artifacts_root` where the run's
         checkpoints, logs, and metadata are written.
     seed : int
         Global RNG seed for training.
-        Separate from ``DataConfig.seed``, which controls dataloader shuffle and augmentations.
+        Separate from `DataConfig.seed`, which controls dataloader shuffle and augmentations.
     deterministic : bool
         If `True`, prefer reproducible CUDA/cuDNN algorithms over speed.
     device : str
-        Compute device: ``"auto"`` (CUDA if available, else CPU), ``"cpu"``,
-        or ``"cuda"``.
+        Compute device: `"auto"` (CUDA if available, else CPU), `"cpu"`,
+        or `"cuda"`.
     """
 
     output_name: str = "default"
@@ -175,7 +183,7 @@ class LossConfig:
     Attributes
     ----------
     name : str
-        Loss identifier. Only ``"dice_ce"`` (0.5 CE + 0.5 Dice) is supported.
+        Loss identifier. Only `"dice_ce"` (0.5 CE + 0.5 Dice) is supported.
     use_class_weights : bool
         If `True`, derive per-class CE weights from train-set pixel counts.
     """
