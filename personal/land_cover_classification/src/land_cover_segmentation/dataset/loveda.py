@@ -143,6 +143,7 @@ class LoveDADataModule:
         self._test_ds_raw: LoveDA | None = None
         self.train_ds: _LoveDAAdapter | None = None
         self.val_ds: _LoveDAAdapter | None = None
+        self.test_ds: _LoveDAAdapter | None = None
         self._mean: list[float] | None = None
         self._std: list[float] | None = None
         self._is_setup = False
@@ -208,6 +209,12 @@ class LoveDADataModule:
             nodata_label=self.cfg.nodata_label,
             ignore_index=self.cfg.ignore_index,
         )
+        self.test_ds = _LoveDAAdapter(
+            self._test_ds_raw,
+            val_transform,
+            nodata_label=self.cfg.nodata_label,
+            ignore_index=self.cfg.ignore_index,
+        )
 
         self._is_setup = True
 
@@ -259,6 +266,20 @@ class LoveDADataModule:
         assert self.val_ds is not None
         return torch.utils.data.DataLoader(
             self.val_ds,
+            batch_size=self.cfg.batch_size,
+            shuffle=False,
+            drop_last=False,
+            num_workers=self.cfg.num_workers,
+            persistent_workers=self.cfg.num_workers > 0,
+            worker_init_fn=_worker_init_fn,
+        )
+
+    def test_dataloader(self) -> torch.utils.data.DataLoader:
+        """Sequential DataLoader over the test split (val-style transforms)."""
+        self._require_setup()
+        assert self.test_ds is not None
+        return torch.utils.data.DataLoader(
+            self.test_ds,
             batch_size=self.cfg.batch_size,
             shuffle=False,
             drop_last=False,
