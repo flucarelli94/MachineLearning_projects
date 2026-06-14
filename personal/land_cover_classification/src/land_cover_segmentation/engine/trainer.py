@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import time
 from pathlib import Path
@@ -27,6 +28,13 @@ from land_cover_segmentation.engine.evaluator import (
 from land_cover_segmentation.engine.losses import DiceCELoss
 from land_cover_segmentation.engine.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.utils import seed_everything
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    force=True,
+)
+logger = logging.getLogger(__name__)
 
 
 class Trainer:
@@ -65,6 +73,13 @@ class Trainer:
         seed_everything(self.cfg.run.seed, deterministic=self.cfg.run.deterministic)
         self.run_dir.mkdir(parents=True, exist_ok=True)
         dump(self.cfg, self.run_dir / "config.yaml")
+        logger.info(
+            "Starting training run=%s device=%s epochs=%d run_dir=%s",
+            self.cfg.run.output_name,
+            self.device,
+            self.cfg.train.epochs,
+            self.run_dir,
+        )
 
         self.datamodule.prepare_data()
         self.datamodule.setup()
@@ -77,6 +92,8 @@ class Trainer:
             if self.cfg.loss.use_class_weights
             else None
         )
+        if class_weights is not None:
+            logger.info("Using class weights for loss")
         loss_fn = DiceCELoss(
             ignore_index=self.cfg.data.ignore_index,
             class_weights=class_weights,
@@ -120,6 +137,11 @@ class Trainer:
             is_best = val_miou > best_val_miou
             if is_best:
                 best_val_miou = val_miou
+                logger.info(
+                    "New best checkpoint val_miou=%.4f epoch=%d",
+                    best_val_miou,
+                    epoch + 1,
+                )
                 checkpoint_io.save(
                     self.run_dir / "best.pth",
                     model=self.model,
@@ -160,14 +182,27 @@ class Trainer:
 
             if early_stopping.step(val_miou):
                 stopped_early = True
+                logger.info(
+                    "Early stopping triggered after epoch %d (patience=%d)",
+                    epoch + 1,
+                    self.cfg.train.patience,
+                )
                 break
 
+        elapsed_s = time.perf_counter() - fit_start
+        logger.info(
+            "Training finished epochs_run=%d best_val_miou=%.4f stopped_early=%s elapsed_s=%.1f",
+            epochs_run,
+            best_val_miou,
+            stopped_early,
+            elapsed_s,
+        )
         return {
             "run_dir": self.run_dir,
             "best_val_miou": best_val_miou,
             "epochs_run": epochs_run,
             "stopped_early": stopped_early,
-            "elapsed_s": time.perf_counter() - fit_start,
+            "elapsed_s": elapsed_s,
         }
 
     def _train_epoch(
@@ -295,6 +330,7 @@ def _load_or_compute_class_weights(
     cache_path = run_dir / "class_weights.json"
     if cache_path.exists():
         raw = json.loads(cache_path.read_text())
+        logger.info("Loaded class weights from %s", cache_path)
         return torch.tensor(raw["weights"], dtype=torch.float32)
 
     counts = _class_pixel_counts(cfg, datamodule)
@@ -313,6 +349,7 @@ def _load_or_compute_class_weights(
             indent=2,
         )
     )
+    logger.info("Computed and cached class weights to %s", cache_path)
     return weights
 
 
@@ -341,13 +378,14 @@ def _log_epoch(
 ) -> None:
     lrs = [group["lr"] for group in optimizer.param_groups]
     lr_str = ", ".join(f"{lr:.2e}" for lr in lrs)
-    print(
-        f"epoch {epoch + 1}: "
-        f"train_loss={train_metrics['loss']:.4f} "
-        f"train_miou={train_metrics['miou']:.4f} "
-        f"val_loss={val_metrics['loss']:.4f} "
-        f"val_miou={val_metrics['miou']:.4f} "
-        f"lr=[{lr_str}]"
+    logger.info(
+        "epoch %d: train_loss=%.4f train_miou=%.4f val_loss=%.4f val_miou=%.4f lr=[%s]",
+        epoch + 1,
+        train_metrics["loss"],
+        train_metrics["miou"],
+        val_metrics["loss"],
+        val_metrics["miou"],
+        lr_str,
     )
 
 
