@@ -1,6 +1,9 @@
 """Model factory and optional user-defined architecture hook.
 
-Built-in models are constructed by `models.factory` (Phase C). For a custom
-architecture, implement `custom_model.build_model` and set
-`model.source: custom` in the YAML config.
+Use `factory.build_model` from training and inference code. When `model.source` is `"custom"`,
+that function delegates to `custom_model.build_model`.
 """
+
+from land_cover_segmentation.models.factory import build_model
+
+__all__ = ["build_model"]
