@@ -37,7 +37,7 @@ def fake_split():
 @pytest.fixture
 def datamodule_with_fake_adapters(request):
     """Build a datamodule whose train/val adapters wrap an in-memory fake
-    split, bypassing torchgeo entirely. Used to avoid downloading 4 GB.
+    split, bypassing torchgeo entirely. Used to avoid downloading ~20 GB.
     """
     fake_split = request.getfixturevalue("fake_split")
 

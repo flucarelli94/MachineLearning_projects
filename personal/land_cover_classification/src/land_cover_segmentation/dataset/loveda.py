@@ -3,7 +3,8 @@
 Lifecycle:
 
 * `LoveDADataModule.prepare_data` — single-process; ensures the
-  LoveDA archives are present on disk (idempotent torchgeo download).
+  LoveDA archives are present on disk (idempotent torchgeo download;
+  ~20 GB for all splits).
 * `LoveDADataModule.setup` — per-process; instantiates per-split
   torchgeo datasets, computes channel normalization statistics on the
   train split, builds train/val transforms with those stats, and wraps
@@ -171,7 +172,7 @@ class LoveDADataModule:
         torchgeo.datasets.errors.DatasetNotFoundError
             If the dataset is not on disk. Call `prepare_data()`
             first to download it (we intentionally pass `download=False`
-            here so `setup()` never silently kicks off a 4 GB transfer).
+            here so `setup()` never silently kicks off a ~20 GB transfer).
         """
         if self._is_setup:
             return

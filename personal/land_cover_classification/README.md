@@ -57,7 +57,7 @@ Then prefix commands below with `uv run` (e.g. `uv run cls data download`).
 
 ## Download the dataset
 
-LoveDA is fetched through TorchGeo. A full download (train, val, and test splits) is roughly **4 GB** on disk. Downloads are **idempotent**: files already present under the destination directory are skipped, so re-running the command is safe.
+LoveDA is fetched through TorchGeo. A full download (train, val, and test splits) uses roughly **20 GB** on disk. Downloads are **idempotent**: files already present under the destination directory are skipped, so re-running the command is safe.
 
 ### Default download
 

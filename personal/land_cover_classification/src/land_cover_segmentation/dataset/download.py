@@ -5,8 +5,8 @@ Download via the CLI: ``uv run cls data download``.
 This module exposes ``download_loveda()`` for programmatic use. The Click
 command lives in ``land_cover_segmentation.cli``.
 
-Roughly 4 GB total: (train + val + test) × (urban + rural). Subsequent runs
-skip files that already exist on disk.
+Roughly **20 GB** on disk for a full download (train + val + test, urban +
+rural). Subsequent runs skip files that already exist on disk.
 
 TorchGeo ships one archive per split; each zip contains both urban and rural.
 The ``scenes`` argument filters verification and sample counts, not download
@@ -80,9 +80,10 @@ def download_loveda(
 
     Notes
     -----
-    LoveDA exposes per-scene loading but not per-scene download URLs. Use
-    `scenes` to match how you plan to load the dataset later (e.g. urban
-    only), not to reduce bandwidth or disk usage on a fresh download.
+    A full download of all splits uses roughly 20 GB on disk. LoveDA exposes
+    per-scene loading but not per-scene download URLs. Use `scenes` to match
+    how you plan to load the dataset later (e.g. urban only), not to reduce
+    bandwidth or disk usage on a fresh download.
     """
     bad_splits = [s for s in splits if s not in VALID_SPLITS]
     if bad_splits:
