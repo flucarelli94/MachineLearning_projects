@@ -1,44 +1,37 @@
 """Bootstrap the LoveDA dataset.
 
-CLI entry point for downloading the LoveDA dataset. The installed console
-script (see `[project.scripts]` in `pyproject.toml`) is
-`land-cover-seg-download`; `python -m` also works since this module
-defines an `if __name__ == "__main__"` block.
+Download via the CLI: ``uv run cls data download``.
+
+This module exposes ``download_loveda()`` for programmatic use. The Click
+command lives in ``land_cover_segmentation.cli``.
 
 Roughly 4 GB total: (train + val + test) × (urban + rural). Subsequent runs
 skip files that already exist on disk.
 
 TorchGeo ships one archive per split; each zip contains both urban and rural.
-The `--scenes` / `scenes` argument filters verification and sample counts,
-not download size.
+The ``scenes`` argument filters verification and sample counts, not download
+size.
 
 Examples
 --------
 Default — fetch every split and scene::
 
-    uv run land-cover-seg-download
-
-Equivalent `python -m` form (handy when the project isn't installed)::
-
-    uv run python -m land_cover_segmentation.dataset.download
+    uv run cls data download
 
 Custom root, skip checksum verification::
 
-    uv run land-cover-seg-download --root ./data/loveda --no-checksum
+    uv run cls data download --root ./data/loveda --no-checksum
 
 Subset of splits (the option is repeatable)::
 
-    uv run land-cover-seg-download --splits train --splits val
+    uv run cls data download --splits train --splits val
 """
 
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
-import click
 from torchgeo.datasets import LoveDA
-
-from land_cover_segmentation import utils
 
 Split = Literal["train", "val", "test"]
 Scene = Literal["urban", "rural"]
@@ -112,66 +105,6 @@ def download_loveda(
         )
         counts[split] = len(ds)
     return counts
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
-
-@click.command(context_settings={"help_option_names": ["-h", "--help"]})
-@click.option(
-    "--root",
-    type=click.Path(file_okay=False, path_type=Path),
-    default=Path("./data/loveda"),
-    show_default=True,
-    help="Destination directory.",
-)
-@click.option(
-    "--splits",
-    type=click.Choice(VALID_SPLITS),
-    multiple=True,
-    default=VALID_SPLITS,
-    show_default=True,
-    help="Splits to fetch (repeatable).",
-)
-@click.option(
-    "--scenes",
-    type=click.Choice(VALID_SCENES),
-    multiple=True,
-    default=VALID_SCENES,
-    show_default=True,
-    help="Scenes to verify and count (repeatable). Does not limit download size.",
-)
-@click.option(
-    "--checksum/--no-checksum",
-    default=True,
-    show_default=True,
-    help="Verify file checksums against torchgeo's manifest.",
-)
-def main(
-    root: Path,
-    splits: tuple[str, ...],
-    scenes: tuple[str, ...],
-    checksum: bool,
-) -> None:
-    """Download LoveDA splits and report per-split sample counts."""
-    click.echo(f"Root: {root.resolve()}")
-    click.echo(
-        f"Splits: {list(splits)}    Scenes: {list(scenes)}    Checksum: {checksum}"
-    )
-
-    counts = download_loveda(root=root, splits=splits, scenes=scenes, checksum=checksum)
-
-    for split, n in counts.items():
-        click.echo(f"  {split}: {n} samples")
-    click.echo(
-        f"\nDone. Total on disk under {root}: {utils.human_bytes(utils.dir_size(root))}"
-    )
-
-
-if __name__ == "__main__":
-    main()
 
 
 __all__ = ["download_loveda", "VALID_SPLITS", "VALID_SCENES"]

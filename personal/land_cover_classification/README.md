@@ -19,8 +19,7 @@ pip install .
 ```
 
 Run this from the project root after cloning or unpacking the source. This registers the
-`land-cover-seg-download` console script (and future `land-cover-seg-*` CLIs) on your
-`PATH` inside the virtual environment.
+`cls` console script on your `PATH` inside the virtual environment.
 
 To reinstall after pulling updates: `pip install .` again (or `pip install --upgrade .`).
 
@@ -54,7 +53,7 @@ If you use [uv](https://docs.astral.sh/uv/) for development:
 uv sync
 ```
 
-Then prefix commands below with `uv run` (e.g. `uv run land-cover-seg-download`).
+Then prefix commands below with `uv run` (e.g. `uv run cls data download`).
 
 ## Download the dataset
 
@@ -65,17 +64,17 @@ LoveDA is fetched through TorchGeo. A full download (train, val, and test splits
 Stores data under `./data/loveda` (matching the default in `config.py`):
 
 ```bash
-land-cover-seg-download
+cls data download
 ```
 
-With uv: `uv run land-cover-seg-download`
+With uv: `uv run cls data download`
 
 On success, the CLI prints per-split sample counts and the total size on disk.
 
 ### Custom destination
 
 ```bash
-land-cover-seg-download --root /path/to/loveda
+cls data download --root /path/to/loveda
 ```
 
 If you change the root, set the same path in your config YAML under `data.root`.
@@ -85,7 +84,7 @@ If you change the root, set the same path in your config YAML under `data.root`.
 Useful while iterating — each split is a separate archive:
 
 ```bash
-land-cover-seg-download --splits train --splits val
+cls data download --splits train --splits val
 ```
 
 Allowed splits: `train`, `val`, `test`.
@@ -97,24 +96,16 @@ directories are verified and counted; it does **not** reduce download size (Torc
 fetches the full split archive):
 
 ```bash
-land-cover-seg-download --scenes urban
+cls data download --scenes urban
 ```
 
 ### Skip checksum verification
 
 ```bash
-land-cover-seg-download --no-checksum
+cls data download --no-checksum
 ```
 
-### Without the installed console script
-
-If the package is not installed, the module entry point works the same way:
-
-```bash
-python -m land_cover_segmentation.dataset.download
-```
-
-Run `land-cover-seg-download --help` for all options.
+Run `cls data download --help` for all options.
 
 ### Notes
 

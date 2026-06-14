@@ -1,4 +1,4 @@
-"""Unified command-line interface for training, evaluation, and prediction."""
+"""Unified command-line interface for land cover segmentation."""
 
 from __future__ import annotations
 
@@ -7,7 +7,13 @@ from pathlib import Path
 
 import click
 
+from land_cover_segmentation import utils
 from land_cover_segmentation.config import load
+from land_cover_segmentation.dataset.download import (
+    VALID_SCENES,
+    VALID_SPLITS,
+    download_loveda,
+)
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
 from land_cover_segmentation.engine.evaluator import Split, evaluate_run
 from land_cover_segmentation.engine.trainer import Trainer
@@ -16,11 +22,21 @@ from land_cover_segmentation.models.factory import build_model
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
-def cli() -> None:
+def cls() -> None:
     """Land cover segmentation tools."""
 
 
-@cli.command("train")
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+def model() -> None:
+    """Train, evaluate, and run inference with segmentation models."""
+
+
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+def data() -> None:
+    """Dataset download and preparation."""
+
+
+@model.command("train")
 @click.option(
     "--config",
     required=True,
@@ -38,9 +54,9 @@ def train(config: Path, run_name: str | None) -> None:
     if run_name is not None:
         cfg = replace(cfg, run=replace(cfg.run, output_name=run_name))
 
-    model = build_model(cfg)
+    built_model = build_model(cfg)
     datamodule = LoveDADataModule(cfg.data)
-    result = Trainer(model, cfg, datamodule).fit()
+    result = Trainer(built_model, cfg, datamodule).fit()
 
     click.echo(f"Run directory: {result['run_dir']}")
     click.echo(f"Best val mIoU: {result['best_val_miou']:.4f}")
@@ -49,7 +65,7 @@ def train(config: Path, run_name: str | None) -> None:
         click.echo("Stopped early (patience exceeded).")
 
 
-@cli.command("evaluate")
+@model.command("evaluate")
 @click.option(
     "--run",
     "run_dir",
@@ -75,7 +91,7 @@ def evaluate(run_dir: Path, split: Split) -> None:
     click.echo(f"Metrics written to {run_dir / 'metrics.json'}")
 
 
-@cli.command("predict")
+@model.command("predict")
 @click.option(
     "--run",
     "run_dir",
@@ -103,4 +119,59 @@ def predict(run_dir: Path, input_path: Path, output_path: Path) -> None:
     click.echo(f"Prediction written to {out}")
 
 
-__all__ = ["cli", "evaluate", "predict", "train"]
+@data.command("download")
+@click.option(
+    "--root",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=Path("./data/loveda"),
+    show_default=True,
+    help="Destination directory.",
+)
+@click.option(
+    "--splits",
+    type=click.Choice(VALID_SPLITS),
+    multiple=True,
+    default=VALID_SPLITS,
+    show_default=True,
+    help="Splits to fetch (repeatable).",
+)
+@click.option(
+    "--scenes",
+    type=click.Choice(VALID_SCENES),
+    multiple=True,
+    default=VALID_SCENES,
+    show_default=True,
+    help="Scenes to verify and count (repeatable). Does not limit download size.",
+)
+@click.option(
+    "--checksum/--no-checksum",
+    default=True,
+    show_default=True,
+    help="Verify file checksums against torchgeo's manifest.",
+)
+def download(
+    root: Path,
+    splits: tuple[str, ...],
+    scenes: tuple[str, ...],
+    checksum: bool,
+) -> None:
+    """Download LoveDA splits and report per-split sample counts."""
+    click.echo(f"Root: {root.resolve()}")
+    click.echo(
+        f"Splits: {list(splits)}    Scenes: {list(scenes)}    Checksum: {checksum}"
+    )
+
+    counts = download_loveda(root=root, splits=splits, scenes=scenes, checksum=checksum)
+
+    for split, n in counts.items():
+        click.echo(f"  {split}: {n} samples")
+    click.echo(
+        f"\nDone. Total on disk under {root}: {utils.human_bytes(utils.dir_size(root))}"
+    )
+
+
+cls.add_command(model)
+cls.add_command(data)
+
+
+__all__ = ["cls", "data", "download", "evaluate", "model", "predict", "train"]
