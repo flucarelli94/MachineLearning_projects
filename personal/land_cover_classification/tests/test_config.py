@@ -99,6 +99,11 @@ def test_train_config_keys():
     }
 
 
+def test_train_config_rejects_invalid_patience():
+    with pytest.raises(ValueError, match="train.patience"):
+        TrainConfig(patience=0)
+
+
 def test_data_config_keys():
     data_config = DataConfig()
     assert set(asdict(data_config).keys()) == {
@@ -164,6 +169,13 @@ class TestLoad:
         yaml_path = tmp_path / "bad.yaml"
         yaml_path.write_text("train:\n  epocs: 5\n")
         with pytest.raises(ValueError, match="train.epocs"):
+            load(yaml_path)
+
+    @staticmethod
+    def test_rejects_invalid_train_patience(tmp_path: Path):
+        yaml_path = tmp_path / "bad.yaml"
+        yaml_path.write_text("train:\n  patience: 0\n")
+        with pytest.raises(ValueError, match="train.patience"):
             load(yaml_path)
 
     @staticmethod

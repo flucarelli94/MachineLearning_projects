@@ -236,6 +236,12 @@ class TrainConfig:
     grad_clip: float = 1.0
     artifacts_root: str = "artifacts/runs"
 
+    def __post_init__(self) -> None:
+        if self.patience < 1:
+            raise ValueError(
+                f"train.patience must be >= 1, got {self.patience}."
+            )
+
 
 @dataclass
 class Config:
