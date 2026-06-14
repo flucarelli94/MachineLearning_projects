@@ -17,10 +17,12 @@ from tqdm import tqdm
 
 from land_cover_segmentation.config import Config, dump
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
-from land_cover_segmentation.engine.callbacks import (
-    CheckpointWriter,
-    EarlyStopping,
-    JSONLLogger,
+from land_cover_segmentation.engine.callbacks import EarlyStopping, JSONLLogger
+from land_cover_segmentation.engine.checkpoint import CheckpointIO
+from land_cover_segmentation.engine.evaluator import (
+    evaluate_loader,
+    metrics_from_confusion,
+    resolve_device,
 )
 from land_cover_segmentation.engine.losses import DiceCELoss
 from land_cover_segmentation.engine.metrics import StreamingConfusionMatrix
@@ -49,7 +51,7 @@ class Trainer:
         self.model = model
         self.cfg = cfg
         self.datamodule = datamodule
-        self.device = _resolve_device(cfg.run.device)
+        self.device = resolve_device(cfg.run.device)
         self.run_dir = Path(cfg.train.artifacts_root) / cfg.run.output_name
 
     def fit(self) -> dict[str, Any]:
@@ -93,7 +95,7 @@ class Trainer:
 
         early_stopping = EarlyStopping(patience=self.cfg.train.patience)
         jsonl_logger = JSONLLogger(self.run_dir / "run.jsonl")
-        checkpoint_writer = CheckpointWriter(self.cfg, self.datamodule, self.run_dir)
+        checkpoint_io = CheckpointIO(self.cfg, self.datamodule, self.run_dir)
 
         best_val_miou = float("-inf")
         epochs_run = 0
@@ -111,14 +113,14 @@ class Trainer:
                 autocast_device,
                 epoch,
             )
-            val_metrics = self._validate_epoch(val_loader, loss_fn, autocast_device)
+            val_metrics = self._validate_epoch(val_loader, loss_fn)
             scheduler.step()
 
             val_miou = val_metrics["miou"]
             is_best = val_miou > best_val_miou
             if is_best:
                 best_val_miou = val_miou
-                checkpoint_writer.save(
+                checkpoint_io.save(
                     self.run_dir / "best.pth",
                     model=self.model,
                     optimizer=optimizer,
@@ -127,7 +129,7 @@ class Trainer:
                     best_val_miou=best_val_miou,
                     is_best=True,
                 )
-            checkpoint_writer.save(
+            checkpoint_io.save(
                 self.run_dir / "last.pth",
                 model=self.model,
                 optimizer=optimizer,
@@ -212,57 +214,22 @@ class Trainer:
             cm.update(preds, masks)
             pbar.set_postfix(loss=f"{loss.item():.4f}")
 
-        return _metrics_dict(cm, loss_sum / max(num_batches, 1))
+        return metrics_from_confusion(cm, loss_sum / max(num_batches, 1))
 
     @torch.no_grad()
     def _validate_epoch(
         self,
         loader: DataLoader,
         loss_fn: DiceCELoss,
-        autocast_device: str,
     ) -> dict[str, Any]:
-        self.model.eval()
-        cm = StreamingConfusionMatrix(
-            self.cfg.data.num_classes, self.cfg.data.ignore_index
+        return evaluate_loader(
+            self.model,
+            loader,
+            loss_fn,
+            self.cfg,
+            self.device,
+            desc="val",
         )
-        loss_sum = 0.0
-        num_batches = 0
-
-        for images, masks in tqdm(loader, desc="val"):
-            images = images.to(self.device, non_blocking=True)
-            masks = masks.to(self.device, non_blocking=True)
-
-            with torch.amp.autocast(
-                device_type=autocast_device,
-                enabled=autocast_device == "cuda",
-            ):
-                logits = self.model(images)
-                loss = loss_fn(logits, masks)
-
-            loss_sum += loss.item()
-            num_batches += 1
-            cm.update(logits.argmax(dim=1), masks)
-
-        return _metrics_dict(cm, loss_sum / max(num_batches, 1))
-
-
-def _metrics_dict(cm: StreamingConfusionMatrix, loss: float) -> dict[str, Any]:
-    metrics = cm.compute()
-    per_class_iou = metrics["per_class_iou"].tolist()
-    return {
-        "loss": loss,
-        "miou": metrics["miou"].item(),
-        "pixel_acc": metrics["pixel_acc"].item(),
-        "per_class_iou": [
-            None if isinstance(v, float) and math.isnan(v) else v for v in per_class_iou
-        ],
-    }
-
-
-def _resolve_device(device: str) -> torch.device:
-    if device == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return torch.device(device)
 
 
 def _build_param_groups(model: nn.Module, cfg: Config) -> list[dict[str, Any]]:
