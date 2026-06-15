@@ -80,15 +80,23 @@ def train(config: Path, run_name: str | None) -> None:
     show_default=True,
     help="Dataset split to evaluate.",
 )
-def evaluate(run_dir: Path, split: Split) -> None:
+@click.option(
+    "--save-viz",
+    is_flag=True,
+    default=False,
+    help="Write predictions.png qualitative grid.",
+)
+def evaluate(run_dir: Path, split: Split, save_viz: bool) -> None:
     """Evaluate a trained run and write metrics.json."""
-    metrics = evaluate_run(run_dir, split=split)
+    metrics = evaluate_run(run_dir, split=split, save_viz=save_viz)
 
     click.echo(f"Split: {metrics['split']}")
     click.echo(f"mIoU: {metrics['miou']:.4f}")
     click.echo(f"Pixel accuracy: {metrics['pixel_acc']:.4f}")
     click.echo(f"Loss: {metrics['loss']:.4f}")
     click.echo(f"Metrics written to {run_dir / 'metrics.json'}")
+    if save_viz:
+        click.echo(f"Qualitative grid written to {run_dir / 'predictions.png'}")
 
 
 @model.command("predict")

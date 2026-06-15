@@ -41,6 +41,7 @@ class TestEvaluateCli:
         assert result.exit_code == 0
         assert "--run" in result.output
         assert "--split" in result.output
+        assert "--save-viz" in result.output
 
     @staticmethod
     def test_evaluate_cli_requires_run():

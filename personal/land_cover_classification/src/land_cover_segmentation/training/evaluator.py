@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 from typing import Any, Literal
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -19,8 +20,13 @@ from land_cover_segmentation.training.losses import DiceCELoss
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.utils import resolve_device, seed_everything
+from land_cover_segmentation.visualization import (
+    denormalize_image,
+    save_prediction_grid,
+)
 
 Split = Literal["val", "test"]
+DEFAULT_VIZ_SAMPLES = 4
 
 
 def metrics_from_confusion(
@@ -100,7 +106,84 @@ def evaluate_loader(
     return metrics_from_confusion(cm, loss_sum / max(num_batches, 1))
 
 
-def evaluate_run(run_dir: Path, split: Split = "val") -> dict[str, Any]:
+@torch.no_grad()
+def save_png_predictions(
+    model: nn.Module,
+    loader: DataLoader,
+    cfg: Config,
+    device: torch.device,
+    output_path: Path,
+    *,
+    mean: list[float],
+    std: list[float],
+    num_samples: int = DEFAULT_VIZ_SAMPLES,
+) -> Path:
+    """Run inference on a few batches and write a qualitative PNG grid.
+
+    Parameters
+    ----------
+    model : nn.Module
+        Segmentation network in eval mode.
+    loader : DataLoader
+        Batches of `(image, mask)` tuples.
+    cfg : Config
+        Project configuration (palette, classes, `ignore_index`).
+    device : torch.device
+        Compute device.
+    output_path : pathlib.Path
+        Destination PNG path (e.g. `run_dir/predictions.png`).
+    mean, std : list[float]
+        Per-channel normalization used to denormalize inputs for display.
+    num_samples : int, optional
+        Number of rows in the output grid.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the written PNG.
+    """
+    model.eval()
+    images: list[np.ndarray] = []
+    masks: list[np.ndarray] = []
+    preds: list[np.ndarray] = []
+    autocast_device = device.type
+
+    for batch_images, batch_masks in loader:
+        batch_images = batch_images.to(device, non_blocking=True)
+        with torch.amp.autocast(
+            device_type=autocast_device,
+            enabled=autocast_device == "cuda",
+        ):
+            logits = model(batch_images)
+        batch_preds = logits.argmax(dim=1).cpu().numpy()
+
+        for index in range(batch_images.size(0)):
+            if len(images) >= num_samples:
+                break
+            images.append(denormalize_image(batch_images[index], mean, std))
+            masks.append(batch_masks[index].cpu().numpy())
+            preds.append(batch_preds[index])
+        if len(images) >= num_samples:
+            break
+
+    return save_prediction_grid(
+        images,
+        masks,
+        preds,
+        cfg.data.palette,
+        output_path,
+        class_names=cfg.data.classes,
+        ignore_index=cfg.data.ignore_index,
+    )
+
+
+def evaluate_run(
+    run_dir: Path,
+    split: Split = "val",
+    *,
+    save_viz: bool = False,
+    viz_samples: int = DEFAULT_VIZ_SAMPLES,
+) -> dict[str, Any]:
     """Evaluate `best.pth` from a training run and write `metrics.json`.
 
     Parameters
@@ -144,6 +227,19 @@ def evaluate_run(run_dir: Path, split: Split = "val") -> dict[str, Any]:
 
     metrics_path = run_dir / "metrics.json"
     metrics_path.write_text(json.dumps(output, indent=2))
+
+    if save_viz:
+        save_png_predictions(
+            model,
+            loader,
+            cfg,
+            device,
+            run_dir / "predictions.png",
+            mean=datamodule.mean,
+            std=datamodule.std,
+            num_samples=viz_samples,
+        )
+
     return output
 
 
@@ -156,7 +252,9 @@ def _load_class_weights(run_dir: Path) -> torch.Tensor | None:
 
 
 __all__ = [
+    "DEFAULT_VIZ_SAMPLES",
     "evaluate_loader",
     "evaluate_run",
     "metrics_from_confusion",
+    "save_png_predictions",
 ]

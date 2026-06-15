@@ -1,9 +1,8 @@
 """Generic utilities shared across the package.
 
-Filesystem helpers (used by the downloader and, later, the checkpoint
-writer), small color helpers used to render label palettes, image
-statistics helpers used by the data module at `setup()` time, and
-deterministic seeding for training runs.
+Filesystem helpers (used by the downloader and checkpoint writer), color
+helpers used by GeoTIFF export, image statistics helpers used by the
+data module at `setup()` time, and deterministic seeding for training runs.
 """
 
 import random
