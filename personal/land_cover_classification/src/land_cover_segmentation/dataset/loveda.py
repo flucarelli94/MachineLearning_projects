@@ -31,7 +31,7 @@ from land_cover_segmentation.utils import compute_channel_stats, configure_loggi
 
 logger = configure_logging(__name__)
 
-STATS_MAX_SAMPLES = 100
+STATS_MAX_SAMPLES = 1000
 
 
 def _loveda_image_hwc_uint8(image: torch.Tensor) -> np.ndarray:

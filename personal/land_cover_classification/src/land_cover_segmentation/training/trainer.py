@@ -13,7 +13,7 @@ import torch.nn as nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from land_cover_segmentation.config import Config, dump
 from land_cover_segmentation.dataset.loveda import LoveDADataModule
@@ -363,7 +363,7 @@ def _class_pixel_counts(cfg: Config, datamodule: LoveDADataModule) -> torch.Tens
         raise RuntimeError("Train split is not initialized; call setup() first.")
 
     counts = torch.zeros(cfg.data.num_classes, dtype=torch.float64)
-    for idx in range(len(raw)):
+    for idx in trange(len(raw), desc="Computing pixel counts per class"):
         mask = raw[idx]["mask"].reshape(-1).to(torch.int64)
         valid = mask != cfg.data.nodata_label
         if not valid.any():
