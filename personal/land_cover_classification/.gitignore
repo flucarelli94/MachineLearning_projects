@@ -37,6 +37,8 @@ Thumbs.db
 
 # Project-specific
 *.log
+*.out
+*.err
 
 # ML artifacts and data (large, regenerable)
 artifacts/
