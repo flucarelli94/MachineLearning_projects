@@ -75,3 +75,25 @@ def test_compute_channel_stats_validation():
     bad_shape = np.zeros((4, 4), dtype=np.uint8)
     with pytest.raises(ValueError, match="shape"):
         compute_channel_stats([bad_shape])
+    many = [np.full((2, 2, 3), 128, dtype=np.uint8) for _ in range(20)]
+    with pytest.raises(ValueError, match="seed"):
+        compute_channel_stats(many, max_samples=5)
+
+
+def test_compute_channel_stats_max_samples_matches_full_when_large():
+    img0 = np.full((2, 2, 3), 0, dtype=np.uint8)
+    img1 = np.full((2, 2, 3), 255, dtype=np.uint8)
+    images = [img0, img1]
+    full_mean, full_std = compute_channel_stats(images)
+    sampled_mean, sampled_std = compute_channel_stats(
+        images, max_samples=10, seed=0
+    )
+    assert np.allclose(full_mean, sampled_mean)
+    assert np.allclose(full_std, sampled_std)
+
+
+def test_compute_channel_stats_max_samples_is_deterministic():
+    images = [np.full((2, 2, 3), value, dtype=np.uint8) for value in range(10)]
+    first = compute_channel_stats(images, max_samples=4, seed=42)
+    second = compute_channel_stats(images, max_samples=4, seed=42)
+    assert first == second

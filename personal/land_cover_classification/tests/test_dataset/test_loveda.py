@@ -14,6 +14,7 @@ from land_cover_segmentation.config import DataConfig
 from land_cover_segmentation.dataset.loveda import (
     LoveDADataModule,
     _LoveDAAdapter,
+    _subset_indices,
 )
 from land_cover_segmentation.dataset.augmentation import (
     build_train_augmentation,
@@ -134,3 +135,28 @@ def test_adapter_set_seed_changes_augmentation_output(fake_split):
     adapter.set_seed(999)
     img_b, _ = adapter[0]
     assert not torch.equal(img_a, img_b), "different seed must change the output"
+
+
+def test_subset_indices_uses_half_when_fraction_is_one_half():
+    indices = _subset_indices(10, fraction=0.5, seed=214)
+    assert len(indices) == 5
+    assert indices == sorted(indices)
+    assert all(0 <= idx < 10 for idx in indices)
+
+
+def test_subset_indices_is_deterministic_for_same_seed():
+    first = _subset_indices(20, fraction=0.5, seed=7)
+    second = _subset_indices(20, fraction=0.5, seed=7)
+    assert first == second
+
+
+def test_subset_indices_returns_full_range_when_fraction_is_one():
+    indices = _subset_indices(6, fraction=1.0, seed=0)
+    assert indices == [0, 1, 2, 3, 4, 5]
+
+
+def test_subset_wraps_dataset_when_fraction_below_one(fake_split):
+    ds = fake_split([{"image": torch.zeros(1), "mask": torch.zeros(1)} for _ in range(10)])
+    indices = _subset_indices(len(ds), fraction=0.5, seed=214)
+    subset = torch.utils.data.Subset(ds, indices)
+    assert len(subset) == 5

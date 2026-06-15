@@ -31,6 +31,40 @@ from land_cover_segmentation.utils import compute_channel_stats, configure_loggi
 
 logger = configure_logging(__name__)
 
+STATS_MAX_SAMPLES = 100
+
+
+def _loveda_image_hwc_uint8(image: torch.Tensor) -> np.ndarray:
+    """Convert a torchgeo LoveDA image tensor to HWC uint8 numpy."""
+    arr = np.transpose(image.detach().cpu().numpy(), (1, 2, 0))
+    if arr.dtype == np.uint8:
+        return arr
+    return np.clip(arr, 0, 255).astype(np.uint8)
+
+
+def _subset_indices(n: int, fraction: float, seed: int) -> list[int]:
+    """Return sorted indices for a deterministic random subset of size ``k``.
+
+    Parameters
+    ----------
+    n : int
+        Size of the full index range ``0..n-1``.
+    fraction : float
+        Fraction in `(0, 1]` of indices to keep.
+    seed : int
+        RNG seed for reproducible selection.
+
+    Returns
+    -------
+    list[int]
+        Sorted subset indices, length ``max(1, int(n * fraction))`` capped at ``n``.
+    """
+    k = max(1, int(n * fraction))
+    if k >= n:
+        return list(range(n))
+    rng = np.random.default_rng(seed)
+    return sorted(rng.choice(n, size=k, replace=False).tolist())
+
 
 class _ImageView(Sequence):
     """Lazy sequence view of a torchgeo LoveDA dataset's images as HWC
@@ -48,9 +82,7 @@ class _ImageView(Sequence):
         return len(self._ds)
 
     def __getitem__(self, idx: int) -> np.ndarray:
-        # torchgeo's LoveDA returns image as (C, H, W) uint8; we need HWC.
-        img = self._ds[idx]["image"].numpy()
-        return np.transpose(img, (1, 2, 0))
+        return _loveda_image_hwc_uint8(self._ds[idx]["image"])
 
 
 class _LoveDAAdapter(torch.utils.data.Dataset):
@@ -88,7 +120,7 @@ class _LoveDAAdapter(torch.utils.data.Dataset):
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         item = self._ds[idx]
-        image = np.transpose(item["image"].numpy(), (1, 2, 0))  # HWC uint8
+        image = _loveda_image_hwc_uint8(item["image"])
         mask = item["mask"].numpy()
         if self._nodata_label != self._ignore_index:
             mask = np.where(mask == self._nodata_label, self._ignore_index, mask)
@@ -183,12 +215,38 @@ class LoveDADataModule:
         common_args = dict(
             root=self.cfg.root, scene=list(self.cfg.scene), download=False
         )
-        self._train_ds_raw = LoveDA(split="train", **common_args)
-        self._val_ds_raw = LoveDA(split="val", **common_args)
-        self._test_ds_raw = LoveDA(split="test", **common_args)
+        train_full = LoveDA(split="train", **common_args)
+        val_full = LoveDA(split="val", **common_args)
+        test_full = LoveDA(split="test", **common_args)
+
+        if self.cfg.fraction < 1.0:
+            logger.info(
+                "Using fraction=%.2f: train %d/%d, val %d/%d, test %d/%d",
+                self.cfg.fraction,
+                max(1, int(len(train_full) * self.cfg.fraction)),
+                len(train_full),
+                max(1, int(len(val_full) * self.cfg.fraction)),
+                len(val_full),
+                max(1, int(len(test_full) * self.cfg.fraction)),
+                len(test_full),
+            )
+
+        train_indices = _subset_indices(
+            len(train_full), self.cfg.fraction, self.cfg.seed
+        )
+        val_indices = _subset_indices(len(val_full), self.cfg.fraction, self.cfg.seed)
+        test_indices = _subset_indices(len(test_full), self.cfg.fraction, self.cfg.seed)
+        self._train_ds_raw = torch.utils.data.Subset(train_full, train_indices)
+        self._val_ds_raw = torch.utils.data.Subset(val_full, val_indices)
+        self._test_ds_raw = torch.utils.data.Subset(test_full, test_indices)
 
         logger.info("Computing channel statistics")
-        self._mean, self._std = compute_channel_stats(_ImageView(self._train_ds_raw))
+        max_samples = min(STATS_MAX_SAMPLES, len(self._train_ds_raw))
+        self._mean, self._std = compute_channel_stats(
+            _ImageView(self._train_ds_raw),
+            max_samples=max_samples,
+            seed=self.cfg.seed,
+        )
 
         logger.info("Building train augmentation")
         train_transform = build_train_augmentation(
@@ -302,4 +360,4 @@ class LoveDADataModule:
             )
 
 
-__all__ = ["LoveDADataModule"]
+__all__ = ["LoveDADataModule", "STATS_MAX_SAMPLES", "_subset_indices"]

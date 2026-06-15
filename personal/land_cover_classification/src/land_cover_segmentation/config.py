@@ -62,7 +62,11 @@ class DataConfig:
         edges with no annotation). The data module remaps this to
         `ignore_index` before training.
     seed : int
-        RNG seed for shuffling and augmentation. Controls reproducibility.
+        RNG seed for shuffling, augmentation, and dataset subsampling.
+        Controls reproducibility.
+    fraction : float
+        Fraction of each split to use, in `(0, 1]`. `1.0` uses the full
+        split; `0.5` uses a deterministic random half of train, val, and test.
     classes : list[str]
         Foreground class names, ordered by integer label. `num_classes`
         is derived from this list.
@@ -84,8 +88,15 @@ class DataConfig:
     ignore_index: int = 255
     nodata_label: int = 7
     seed: int = 214
+    fraction: float = 1.0
     classes: list[str] = field(default_factory=lambda: list(_LOVEDA_CLASSES))
     palette: list[str] = field(default_factory=lambda: list(_LOVEDA_PALETTE))
+
+    def __post_init__(self) -> None:
+        if not 0 < self.fraction <= 1.0:
+            raise ValueError(
+                f"Unsupported data.fraction {self.fraction!r}; expected a value in (0, 1]."
+            )
 
     @property
     def num_classes(self) -> int:

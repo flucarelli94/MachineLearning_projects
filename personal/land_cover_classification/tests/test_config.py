@@ -115,9 +115,17 @@ def test_data_config_keys():
         "ignore_index",
         "nodata_label",
         "seed",
+        "fraction",
         "classes",
         "palette",
     }
+
+
+def test_data_config_rejects_invalid_fraction():
+    with pytest.raises(ValueError, match="data.fraction"):
+        DataConfig(fraction=0.0)
+    with pytest.raises(ValueError, match="data.fraction"):
+        DataConfig(fraction=1.5)
 
 
 class TestLoad:
