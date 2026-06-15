@@ -106,7 +106,8 @@ class DataConfig:
 
 @dataclass
 class ModelConfig:
-    """Configuration for the segmentation model.
+    """Configuration for the segmentation model. Information about the smp encoder and pre-trained
+    weights can be found at https://smp.readthedocs.io/en/latest/encoders.html.
 
     `source` selects which builder `land_cover_segmentation.models.factory.build_model`
     uses:
@@ -249,9 +250,7 @@ class TrainConfig:
 
     def __post_init__(self) -> None:
         if self.patience < 1:
-            raise ValueError(
-                f"train.patience must be >= 1, got {self.patience}."
-            )
+            raise ValueError(f"train.patience must be >= 1, got {self.patience}.")
 
 
 @dataclass
