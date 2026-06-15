@@ -78,12 +78,15 @@ class Trainer:
             self.run_dir,
         )
 
+        logger.info("Preparing data")
         self.datamodule.prepare_data()
         self.datamodule.setup()
 
+        logger.info("Creating data loaders")
         train_loader = self.datamodule.train_dataloader()
         val_loader = self.datamodule.val_dataloader()
 
+        logger.info("Loading class weights")
         class_weights = (
             _load_or_compute_class_weights(self.cfg, self.datamodule, self.run_dir)
             if self.cfg.loss.use_class_weights
@@ -97,6 +100,7 @@ class Trainer:
         ).to(self.device)
 
         self.model.to(self.device)
+        logger.info("Building training optimizer and scheduler")
         param_groups = _build_param_groups(self.model, self.cfg)
         optimizer = AdamW(
             param_groups,
@@ -116,7 +120,9 @@ class Trainer:
         stopped_early = False
         fit_start = time.perf_counter()
 
+        logger.info("Starting training epochs=%d", self.cfg.train.epochs)
         for epoch in range(self.cfg.train.epochs):
+            logger.info("Training epoch %d/%d", epoch + 1, self.cfg.train.epochs)
             epoch_start = time.perf_counter()
             epochs_run = epoch + 1
             train_metrics = self._train_epoch(

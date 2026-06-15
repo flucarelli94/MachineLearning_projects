@@ -27,7 +27,9 @@ from land_cover_segmentation.dataset.augmentation import (
     build_train_augmentation,
     build_val_augmentation,
 )
-from land_cover_segmentation.utils import compute_channel_stats
+from land_cover_segmentation.utils import compute_channel_stats, configure_logging
+
+logger = configure_logging(__name__)
 
 
 class _ImageView(Sequence):
@@ -155,6 +157,7 @@ class LoveDADataModule:
         Files already present on disk are skipped, so this is safe to
         re-run. Checksums are verified against torchgeo's manifest.
         """
+        logger.info("Downloading LoveDA dataset")
         download_loveda(
             root=self.cfg.root,
             splits=("train", "val", "test"),
@@ -184,8 +187,10 @@ class LoveDADataModule:
         self._val_ds_raw = LoveDA(split="val", **common_args)
         self._test_ds_raw = LoveDA(split="test", **common_args)
 
+        logger.info("Computing channel statistics")
         self._mean, self._std = compute_channel_stats(_ImageView(self._train_ds_raw))
 
+        logger.info("Building train augmentation")
         train_transform = build_train_augmentation(
             image_size=self.cfg.image_size,
             ignore_index=self.cfg.ignore_index,
@@ -193,6 +198,7 @@ class LoveDADataModule:
             std=self._std,
             seed=self.cfg.seed,
         )
+        logger.info("Building val augmentation")
         val_transform = build_val_augmentation(
             image_size=self.cfg.image_size,
             mean=self._mean,
