@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import math
 import time
 from pathlib import Path
@@ -26,14 +25,13 @@ from land_cover_segmentation.training.evaluator import (
 )
 from land_cover_segmentation.training.losses import DiceCELoss
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
-from land_cover_segmentation.utils import resolve_device, seed_everything
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    force=True,
+from land_cover_segmentation.utils import (
+    configure_logging,
+    resolve_device,
+    seed_everything,
 )
-logger = logging.getLogger(__name__)
+
+logger = configure_logging(__name__)
 
 
 class Trainer:

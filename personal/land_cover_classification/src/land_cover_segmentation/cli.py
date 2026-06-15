@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import logging
 from pathlib import Path
 
 import click
@@ -24,6 +25,7 @@ from land_cover_segmentation.models.factory import build_model
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def lcs() -> None:
     """Land cover segmentation tools."""
+    utils.configure_logging(__name__, level=logging.INFO)
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})

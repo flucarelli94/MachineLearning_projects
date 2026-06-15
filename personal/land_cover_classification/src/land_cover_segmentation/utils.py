@@ -2,9 +2,11 @@
 
 Filesystem helpers (used by the downloader and checkpoint writer), color
 helpers used by GeoTIFF export, image statistics helpers used by the
-data module at `setup()` time, and deterministic seeding for training runs.
+data module at `setup()` time, deterministic seeding for training runs,
+and shared logging configuration for CLI and library entry points.
 """
 
+import logging
 import random
 from collections.abc import Sequence
 from pathlib import Path
@@ -54,6 +56,32 @@ def hex_to_rgb(h: str) -> tuple[int, int, int]:
     if len(h) != 6:
         raise ValueError(f"Expected 6-digit hex color, got {h!r}")
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def configure_logging(name: str, *, level: int = logging.INFO) -> logging.Logger:
+    """Configure package logging and return a named logger.
+
+    The root handler is configured on the first call; later calls reuse
+    that setup and return ``logging.getLogger(name)``.
+
+    Parameters
+    ----------
+    name : str
+        Logger name, typically ``__name__`` of the calling module.
+    level : int, optional
+        Root log level (default ``logging.INFO``).
+
+    Returns
+    -------
+    logging.Logger
+        Logger for ``name``.
+    """
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        force=True,
+    )
+    return logging.getLogger(name)
 
 
 def compute_channel_stats(
@@ -136,6 +164,7 @@ def resolve_device(device: str) -> torch.device:
 
 __all__ = [
     "compute_channel_stats",
+    "configure_logging",
     "dir_size",
     "hex_to_rgb",
     "human_bytes",

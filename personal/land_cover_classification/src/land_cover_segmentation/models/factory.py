@@ -7,6 +7,9 @@ import segmentation_models_pytorch as smp
 
 from land_cover_segmentation.config import Config
 from land_cover_segmentation.models import custom_model
+from land_cover_segmentation.utils import configure_logging
+
+logger = configure_logging(__name__)
 
 
 def build_model(cfg: Config) -> nn.Module:
@@ -26,6 +29,14 @@ def build_model(cfg: Config) -> nn.Module:
         Segmentation model.
     """
     if cfg.model.source == "smp":
+        logger.info(
+            "Building segmentation model: smp.Unet("
+            "encoder=%r, encoder_weights=%r, in_channels=%d, classes=%d)",
+            cfg.model.encoder,
+            cfg.model.encoder_weights,
+            cfg.model.in_channels,
+            cfg.data.num_classes,
+        )
         return smp.Unet(
             encoder_name=cfg.model.encoder,
             encoder_weights=cfg.model.encoder_weights,
@@ -33,6 +44,13 @@ def build_model(cfg: Config) -> nn.Module:
             classes=cfg.data.num_classes,
             activation=None,
         )
+
+    logger.info(
+        "Building segmentation model: custom _UNet("
+        "in_channels=%d, classes=%d)",
+        cfg.model.in_channels,
+        cfg.data.num_classes,
+    )
     return custom_model.build_model(cfg)
 
 
