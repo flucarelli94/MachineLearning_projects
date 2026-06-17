@@ -11,12 +11,13 @@ from land_cover_segmentation.inference.predict import (
     reconstruct,
     tile_scene,
 )
-from land_cover_segmentation.inference.write import write_prediction
+from land_cover_segmentation.inference.write import write_georaster, write_image
 from land_cover_segmentation.models.factory import build_model
+from land_cover_segmentation.utils import hex_to_rgb
 
 
 def test_load_normalized_scene_from_geotiff(synthetic_geotiff):
-    image, georef_path = load_normalized_scene(
+    image, georef_path, source_hwc = load_normalized_scene(
         synthetic_geotiff,
         mean=[0.0, 0.0, 0.0],
         std=[1.0, 1.0, 1.0],
@@ -24,6 +25,8 @@ def test_load_normalized_scene_from_geotiff(synthetic_geotiff):
     assert image.shape == (3, 16, 16)
     assert image.dtype == np.float32
     assert georef_path == synthetic_geotiff
+    assert source_hwc.shape == (16, 16, 3)
+    assert source_hwc.dtype == np.uint8
 
 
 def test_tile_scene_covers_small_image():
@@ -86,12 +89,12 @@ def test_predict_scene_returns_prob_and_class_maps():
     assert np.all((class_map >= 0) & (class_map < cfg.data.num_classes))
 
 
-def test_write_prediction_round_trip(tmp_path, synthetic_geotiff):
+def test_write_georaster_round_trip(tmp_path, synthetic_geotiff):
     class_map = np.full((16, 16), 1, dtype=np.uint8)
     out_path = tmp_path / "pred.tif"
     palette = Config().data.palette
 
-    write_prediction(class_map, synthetic_geotiff, out_path, palette)
+    write_georaster(class_map, synthetic_geotiff, out_path, palette)
 
     with rasterio.open(synthetic_geotiff) as src:
         src_meta = src.meta
@@ -103,6 +106,108 @@ def test_write_prediction_round_trip(tmp_path, synthetic_geotiff):
         assert dst.nodata == 255
         assert dst.read(1)[0, 0] == 1
         assert dst.colormap(1)[1] == (227, 11, 11, 255)
+
+
+def test_write_image_is_rgb(tmp_path):
+    class_map = np.zeros((16, 16), dtype=np.uint8)
+    class_map[:, :8] = 1  # building
+    class_map[:, 8:] = 6  # agriculture
+    out_path = tmp_path / "pred.png"
+    palette = Config().data.palette
+
+    write_image(class_map, out_path, palette, class_names=Config().data.classes)
+
+    from PIL import Image
+
+    with Image.open(out_path) as im:
+        assert im.mode == "RGB"
+        arr = np.array(im)
+    assert arr.shape[0] > 16
+    assert arr.shape[1] == 16
+    assert tuple(arr[0, 0]) == hex_to_rgb(palette[1])
+    assert tuple(arr[0, -1]) == hex_to_rgb(palette[6])
+
+
+def test_write_image_legend_is_outside_map(tmp_path):
+    class_map = np.zeros((16, 16), dtype=np.uint8)
+    class_map[:, :8] = 1
+    class_map[:, 8:] = 6
+    out_path = tmp_path / "pred_legend.png"
+    classes = Config().data.classes
+
+    write_image(
+        class_map,
+        out_path,
+        Config().data.palette,
+        class_names=classes,
+    )
+
+    from PIL import Image
+
+    with Image.open(out_path) as im:
+        arr = np.array(im)
+    map_region = arr[:16, :, :]
+    legend_region = arr[16:, :, :]
+    assert map_region.shape == (16, 16, 3)
+    assert 0 < legend_region.shape[0] <= 44
+    assert tuple(map_region[0, 0]) == hex_to_rgb(Config().data.palette[1])
+
+
+def test_write_image_crops_predicted_background_margins(tmp_path):
+    class_map = np.zeros((16, 16), dtype=np.uint8)
+    class_map[:12, :12] = 6
+    reference = np.full((16, 16, 3), 50, dtype=np.uint8)
+    out_path = tmp_path / "pred_l_crop.png"
+
+    write_image(
+        class_map,
+        out_path,
+        Config().data.palette,
+        reference_rgb=reference,
+    )
+
+    from PIL import Image
+
+    with Image.open(out_path) as im:
+        arr = np.array(im)
+    assert arr.shape[0] > 12
+    assert arr.shape[1] == 12
+    assert arr[:12, :12].shape == (12, 12, 3)
+
+
+def test_write_image_crops_black_padding(tmp_path):
+    class_map = np.zeros((16, 16), dtype=np.uint8)
+    class_map[2:14, 4:16] = 6
+    reference = np.zeros((16, 16, 3), dtype=np.uint8)
+    reference[2:14, 4:16] = 128
+    out_path = tmp_path / "pred_cropped.png"
+
+    write_image(
+        class_map,
+        out_path,
+        Config().data.palette,
+        reference_rgb=reference,
+    )
+
+    from PIL import Image
+
+    with Image.open(out_path) as im:
+        arr = np.array(im)
+    assert arr.shape[0] > 12
+    assert arr.shape[1] == 12
+    assert arr[:12, :12].shape == (12, 12, 3)
+
+
+def test_predict_run_writes_colored_png(trained_run_dir, tmp_path, synthetic_geotiff):
+    out_path = tmp_path / "pred.png"
+    predict_run(trained_run_dir, synthetic_geotiff, out_path)
+
+    from PIL import Image
+
+    assert out_path.exists()
+    with Image.open(out_path) as im:
+        assert im.mode == "RGB"
+        assert len(np.array(im).shape) == 3
 
 
 def test_predict_run_writes_geotiff(trained_run_dir, tmp_path, synthetic_geotiff):

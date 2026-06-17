@@ -121,7 +121,7 @@ def evaluate(run_dir: Path, split: Split, save_viz: bool) -> None:
     "output_path",
     required=True,
     type=click.Path(dir_okay=False, path_type=Path),
-    help="Output GeoTIFF path for the class map.",
+    help="Output path: GeoTIFF (.tif) with colormap, or RGB PNG (.png) with palette colors.",
 )
 def predict(run_dir: Path, input_path: Path, output_path: Path) -> None:
     """Predict a land-cover map for an input image."""

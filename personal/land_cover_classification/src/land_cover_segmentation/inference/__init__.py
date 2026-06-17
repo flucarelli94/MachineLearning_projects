@@ -7,7 +7,7 @@ from land_cover_segmentation.inference.predict import (
     reconstruct,
     tile_scene,
 )
-from land_cover_segmentation.inference.write import write_prediction
+from land_cover_segmentation.inference.write import write_georaster, write_image
 
 __all__ = [
     "load_normalized_scene",
@@ -15,5 +15,6 @@ __all__ = [
     "predict_scene",
     "reconstruct",
     "tile_scene",
-    "write_prediction",
+    "write_georaster",
+    "write_image",
 ]

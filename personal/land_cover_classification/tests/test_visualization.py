@@ -5,6 +5,7 @@ from land_cover_segmentation.config import Config
 from land_cover_segmentation.utils import hex_to_rgb
 from land_cover_segmentation.visualization import (
     colorize_mask,
+    content_bbox,
     denormalize_image,
     palette_to_cmap,
     palette_to_rgb,
@@ -43,10 +44,15 @@ def test_denormalize_image_round_trip():
     assert np.all(out == 127)
 
 
+def test_content_bbox_tightens_to_non_black_region():
+    image = np.zeros((16, 16, 3), dtype=np.uint8)
+    image[2:14, 4:16] = 100
+    assert content_bbox(image) == (2, 14, 4, 16)
+
+
 def test_save_prediction_grid_writes_png(tmp_path):
     palette = Config().data.palette
-    image = np.zeros((8, 8, 3), dtype=np.uint8)
-    image[:, :4] = 255
+    image = np.full((8, 8, 3), 255, dtype=np.uint8)
     mask = np.zeros((8, 8), dtype=np.int64)
     mask[:, 4:] = 1
     pred = mask.copy()
@@ -63,3 +69,25 @@ def test_save_prediction_grid_writes_png(tmp_path):
 
     assert out_path.exists()
     assert out_path.stat().st_size > 0
+
+
+def test_save_prediction_grid_crops_black_padding(tmp_path):
+    palette = Config().data.palette
+    image = np.zeros((16, 16, 3), dtype=np.uint8)
+    image[2:14, 4:16] = 200
+    mask = np.zeros((16, 16), dtype=np.int64)
+    mask[2:14, 4:16] = 1
+    pred = mask.copy()
+
+    out_path = save_prediction_grid(
+        [image],
+        [mask],
+        [pred],
+        palette,
+        tmp_path / "grid_cropped.png",
+        class_names=Config().data.classes,
+        ignore_index=255,
+    )
+
+    assert out_path.exists()
+    assert content_bbox(image) == (2, 14, 4, 16)

@@ -12,7 +12,7 @@ import torch.nn as nn
 from torch.nn.functional import softmax
 
 from land_cover_segmentation.training.checkpoint import CheckpointIO
-from land_cover_segmentation.inference.write import write_prediction
+from land_cover_segmentation.inference.write import write_georaster, write_image
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.utils import resolve_device
 
@@ -229,6 +229,8 @@ def load_normalized_scene(
     georef_path : pathlib.Path or None
         The input path when it carries a CRS (for GeoTIFF output); otherwise
         `None`.
+    source_hwc : numpy.ndarray
+        Original `(H, W, C)` `uint8` RGB array before normalization.
     """
     path = Path(path)
     with rasterio.open(path) as src:
@@ -242,11 +244,12 @@ def load_normalized_scene(
     if data.dtype != np.uint8:
         raise ValueError(f"Expected uint8 input in {path}, got {data.dtype}.")
 
+    source_hwc = np.transpose(data, (1, 2, 0))
     mean_arr = np.asarray(mean, dtype=np.float32)[:, None, None]
     std_arr = np.asarray(std, dtype=np.float32)[:, None, None]
     normalized = data.astype(np.float32) / 255.0
     normalized = (normalized - mean_arr) / std_arr
-    return normalized, georef_path
+    return normalized, georef_path, source_hwc
 
 
 def predict_run(
@@ -284,7 +287,7 @@ def predict_run(
     )
     model.to(device)
 
-    image_chw, georef_path = load_normalized_scene(
+    image_chw, georef_path, source_hwc = load_normalized_scene(
         input_path,
         payload["mean"],
         payload["std"],
@@ -300,12 +303,22 @@ def predict_run(
         batch_size=cfg.data.batch_size,
         device=device,
     )
-    write_prediction(
-        class_map,
-        georef_path,
-        output_path,
-        cfg.data.palette,
-    )
+    if output_path.suffix.lower() == ".png":
+        write_image(
+            class_map,
+            output_path,
+            cfg.data.palette,
+            ignore_index=cfg.data.ignore_index,
+            reference_rgb=source_hwc,
+            class_names=cfg.data.classes,
+        )
+    else:
+        write_georaster(
+            class_map,
+            georef_path,
+            output_path,
+            cfg.data.palette,
+        )
     return output_path
 
 
