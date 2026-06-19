@@ -213,8 +213,7 @@ the data and 256 px crops, expect **~0.20–0.30** val mIoU after 5 epochs (the 
   `configs/custom.yaml`).
 - **Data subset / RAM** — tune `data.fraction` (0–1] in YAML to use a deterministic subset of
   each split; useful for smoke runs (`fast.yaml` uses `0.5`).
-- **Multi-band inference (future)** — Sentinel-2 true-color routing at predict time is planned
-  via `inference/multiband.py` (not yet implemented).
+- **Predict input** — `lcs model predict` expects a 3-band `uint8` RGB raster (GeoTIFF or PNG).
 
 Run `lcs model train --help`, `lcs model evaluate --help`, and `lcs model predict --help` for
 all CLI options.
