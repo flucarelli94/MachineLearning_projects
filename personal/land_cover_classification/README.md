@@ -116,6 +116,21 @@ runtime.
 | `/input` | Inference input rasters (any host file mounted here) |
 | `/output` | Inference outputs |
 
+### Docker config profiles
+
+Configs under `configs/docker/` are baked into images at build time (not bind-mounted).
+They only override paths to match the mount points above; other fields fall back to
+[`config.py`](src/land_cover_segmentation/config.py) defaults unless set in the YAML.
+
+| Profile | Purpose |
+| ------- | ------- |
+| `configs/docker/base.yaml` | Path overlay only (`data.root`, `train.artifacts_root`) |
+| `configs/docker/fast.yaml` | CPU smoke in containers (MobileNetV2, 1 epoch, 20% data, 256 px crops) |
+
+Pass `--config` explicitly on every `docker run` / `docker compose run` — Compose does not
+pick a default. CPU smoke example below uses `fast.yaml`; for a longer GPU run inside
+CUDA image, use `base.yaml` (inherits code defaults: EfficientNet-B0, 5 epochs, full data).
+
 ### Build
 
 From the project root (requires `uv.lock` present — run `uv lock` locally if missing):
@@ -124,10 +139,12 @@ From the project root (requires `uv.lock` present — run `uv lock` locally if m
 # Training — CPU smoke
 docker build -f docker/Dockerfile.training \
   --build-arg BUILD_TARGET=cpu \
-  -t lcs-training:latest .
+  -t lcs-training:cpu .
 
 # Training — CUDA (default BUILD_TARGET=cuda)
-docker build -f docker/Dockerfile.training -t lcs-training:latest .
+docker build -f docker/Dockerfile.training \
+  --build-arg BUILD_TARGET=cuda \
+  -t lcs-training:cuda .
 
 docker build -f docker/Dockerfile.inference-pytorch -t lcs-inference-pytorch:latest .
 docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
@@ -144,18 +161,19 @@ docker compose -f docker/docker-compose.yml build
 Use `--user "$(id -u):$(id -g)"` so files written to bind mounts (e.g. `/artifacts`,
 `/output`) are owned by your host user, not root.
 
-Train (CPU image, mounted data + artifacts):
+Train (CPU smoke image, mounted data + artifacts):
 
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   -v "$PWD/data/loveda:/data/loveda" \
   -v "$PWD/artifacts:/artifacts" \
   lcs-training:cpu \
-  model train --config configs/docker/base.yaml --run-name exp1
+  model train --config configs/docker/fast.yaml --run-name exp1
 ```
 
-CUDA training: use `lcs-training:latest`, add `--gpus all`, and a GPU host with
+CUDA training: use `lcs-training:cuda`, add `--gpus all`, and a GPU host with
 [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+Example: same mounts as above with `--config configs/docker/base.yaml`.
 
 PyTorch predict:
 
@@ -189,7 +207,7 @@ Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership):
 
 ```bash
 UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm training \
-  model train --config configs/docker/base.yaml --run-name exp1
+  model train --config configs/docker/fast.yaml --run-name exp1
 ```
 
 ## Download the dataset
@@ -279,6 +297,8 @@ uv run lcs model train --config configs/base.yaml --run-name my-run
 | `configs/full.yaml` | Longer GPU run (50 epochs) |
 | `configs/fast.yaml` | CPU smoke test (MobileNetV2, 5 epochs, 50% data subset, 256 px crops) |
 | `configs/custom.yaml` | Custom U-Net via `model.source: custom` and `model.unet_features` |
+| `configs/docker/base.yaml` | Docker path overlay (`/data/loveda`, `/artifacts/runs`) |
+| `configs/docker/fast.yaml` | Docker CPU smoke (1 epoch, 20% data; see Docker section) |
 
 Normalization statistics are computed from the training split at setup time and stored in the
 checkpoint payload (`best.pth`), not in the YAML.
