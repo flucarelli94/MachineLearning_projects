@@ -1,0 +1,13 @@
+# Docker overlay: use with bind mounts documented in README / docker/README.
+#
+#   -v "$PWD/data/loveda:/data/loveda"
+#   -v "$PWD/artifacts:/artifacts"
+#
+# Example:
+#   lcs model train --config configs/docker/base.yaml --run-name exp1
+
+data:
+  root: /data/loveda
+
+train:
+  artifacts_root: /artifacts/runs
