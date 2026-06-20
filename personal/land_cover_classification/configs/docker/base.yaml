@@ -1,4 +1,4 @@
-# Docker overlay: use with bind mounts documented in README / docker/README.
+# Docker overlay: use with bind mounts documented in README.md (Docker section).
 #
 #   -v "$PWD/data/loveda:/data/loveda"
 #   -v "$PWD/artifacts:/artifacts"
