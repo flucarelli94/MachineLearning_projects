@@ -19,6 +19,7 @@ dependencies = [
     "click>=8.1",
     "tqdm>=4.66",
     "pillow>=10.2",
+    "onnxruntime>=1.17",
 ]
 
 [dependency-groups]
@@ -27,6 +28,7 @@ dev = [
     "ruff>=0.4",
     "ipykernel>=6.29",
     "jupyterlab>=4.0",
+    "onnx>=1.16",
 ]
 
 [tool.setuptools.dynamic]
