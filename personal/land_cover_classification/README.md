@@ -6,18 +6,17 @@ Semantic segmentation prototype for [LoveDA](https://github.com/Junjue-Wang/Love
 
 Requires Python 3.10+.
 
-Dependencies are split into optional extras (pip) and dependency groups (uv), aligned with
-CLI commands. A bare `pip install .` only installs the CLI shell (`click`, `numpy`, `pyyaml`);
-install the extras you need, or `all` for the full stack.
+Dependencies are split into optional **extras** (pip and uv), aligned with CLI commands. A bare
+`pip install .` only installs the CLI shell (`click`, `numpy`, `pyyaml`); add the extras you
+need for each workflow.
 
-| Extra / group | CLI commands | Pulls in |
+| Extra | CLI commands | Pulls in |
 | --- | --- | --- |
 | `data` | `lcs data download` | TorchGeo |
 | `training` | `lcs model train` | `data` + PyTorch, smp, albumentations |
-| `evaluation` | `lcs model evaluate` | `training` + matplotlib, pillow |
+| `evaluation` | `lcs model evaluate` (also covers train) | `training` + matplotlib, pillow |
 | `inference` | `lcs model predict` | PyTorch, smp, rasterio, matplotlib |
 | `onnx-inference` | `lcs onnx export`, `lcs onnx predict-onnx` | `inference` + onnx, onnxruntime |
-| `all` | all of the above | every extra |
 
 ### For users (recommended)
 
@@ -27,7 +26,7 @@ Install a fixed copy of the package (not editable):
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 python -m pip install -U pip
-pip install ".[all]"
+pip install ".[evaluation]"    # train + evaluate; add others as needed
 ```
 
 Run this from the project root after cloning or unpacking the source. This registers the
@@ -38,13 +37,17 @@ Selective installs:
 ```bash
 pip install ".[data]"              # download only
 pip install ".[training]"          # train (+ data)
+pip install ".[inference]"         # PyTorch predict
 pip install ".[onnx-inference]"    # export + ONNX predict
 ```
 
-To reinstall after pulling updates: `pip install ".[all]"` again (or add `--upgrade`).
+Combine extras when needed, e.g. `pip install ".[evaluation,inference,onnx-inference]"`.
 
-**PyTorch note:** the extras pull `torch` and `torchvision` from PyPI. For a specific CUDA
-build, install them first from the
+To reinstall after pulling updates, re-run the same `pip install` command (add `--upgrade`
+if you want).
+
+**PyTorch note:** extras pull `torch` and `torchvision` from PyPI (CPU wheels via uv’s
+PyTorch index in this repo). For a specific CUDA build, install them first from the
 [PyTorch install selector](https://pytorch.org/get-started/locally/), then install the
 package extras.
 
@@ -56,11 +59,16 @@ Editable install — source changes take effect without reinstalling:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
-pip install -e ".[all]"
+pip install -e ".[evaluation,inference,onnx-inference]"
 ```
 
-Dev tools (pytest, ruff, Jupyter) are included when using `uv sync` below, or install
-manually:
+Dev tools (pytest, ruff, Jupyter) with uv:
+
+```bash
+uv sync --all-extras --group dev
+```
+
+Or install dev tools manually with pip:
 
 ```bash
 pip install pytest ruff ipykernel jupyterlab
@@ -71,17 +79,118 @@ pip install pytest ruff ipykernel jupyterlab
 If you use [uv](https://docs.astral.sh/uv/) for development:
 
 ```bash
-uv sync   # dev group: all CLI groups + pytest, ruff, Jupyter
+uv sync --all-extras --group dev   # every extra + pytest, ruff, Jupyter
 ```
 
-Selective groups:
+Selective extras:
 
 ```bash
-uv sync --group training
-uv sync --group onnx-inference
+uv sync --extra training
+uv sync --extra evaluation
+uv sync --extra onnx-inference
 ```
 
+Plain `uv sync` only installs core deps plus the `dev` group — not enough to run training
+or inference. Always pass `--extra …` or `--all-extras`.
+
 Then prefix commands below with `uv run` (e.g. `uv run lcs data download`).
+
+## Docker
+
+Three images under [`docker/`](docker/), built with [uv](https://docs.astral.sh/uv/) and aligned
+with pip extras. **Data and run artifacts are never copied into images** — bind-mount them at
+runtime.
+
+| Image | Dockerfile | uv extra | Use |
+| --- | --- | --- | --- |
+| `lcs-training` | `docker/Dockerfile.training` | `evaluation` | train, evaluate, download |
+| `lcs-inference-pytorch` | `docker/Dockerfile.inference-pytorch` | `inference` | PyTorch predict |
+| `lcs-inference-onnx` | `docker/Dockerfile.inference-onnx` | `onnx-inference` | ONNX export + predict |
+
+### Mount points (inside the container)
+
+| Path | Purpose |
+| --- | --- |
+| `/data/loveda` | LoveDA dataset (`data.root` in [`configs/docker/base.yaml`](configs/docker/base.yaml)) |
+| `/artifacts` | Run outputs under `/artifacts/runs/<name>/` |
+| `/input` | Inference input rasters (any host file mounted here) |
+| `/output` | Inference outputs |
+
+### Build
+
+From the project root (requires `uv.lock` present — run `uv lock` locally if missing):
+
+```bash
+# Training — CPU smoke
+docker build -f docker/Dockerfile.training \
+  --build-arg BUILD_TARGET=cpu \
+  -t lcs-training:latest .
+
+# Training — CUDA (default BUILD_TARGET=cuda)
+docker build -f docker/Dockerfile.training -t lcs-training:latest .
+
+docker build -f docker/Dockerfile.inference-pytorch -t lcs-inference-pytorch:latest .
+docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
+```
+
+Or build all services via Compose:
+
+```bash
+docker compose -f docker/docker-compose.yml build
+```
+
+### Run examples
+
+Use `--user "$(id -u):$(id -g)"` so files written to bind mounts (e.g. `/artifacts`,
+`/output`) are owned by your host user, not root.
+
+Train (CPU image, mounted data + artifacts):
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$PWD/data/loveda:/data/loveda" \
+  -v "$PWD/artifacts:/artifacts" \
+  lcs-training:cpu \
+  model train --config configs/docker/base.yaml --run-name exp1
+```
+
+CUDA training: use `lcs-training:latest`, add `--gpus all`, and a GPU host with
+[nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+
+PyTorch predict:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$PWD/artifacts/runs/exp1:/run:ro" \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  lcs-inference-pytorch:latest \
+  model predict --run /run --input /input/scene.tif --output /output/pred.tif
+```
+
+ONNX export and predict:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$PWD/artifacts:/artifacts" \
+  lcs-inference-onnx:latest \
+  onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
+
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$PWD/artifacts/runs/exp1:/run:ro" \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  lcs-inference-onnx:latest \
+  onnx predict-onnx --run /run --onnx /run/model.onnx \
+    --input /input/scene.tif --output /output/pred.tif
+```
+
+Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership):
+
+```bash
+UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm training \
+  model train --config configs/docker/base.yaml --run-name exp1
+```
 
 ## Download the dataset
 
