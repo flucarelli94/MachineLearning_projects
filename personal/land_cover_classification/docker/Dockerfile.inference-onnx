@@ -1,0 +1,49 @@
+# ONNX export + inference image for land-cover segmentation.
+#
+# Build:
+#   docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
+#
+# Export:
+#   docker run --rm --user "$(id -u):$(id -g)" \
+#     -v "$PWD/artifacts:/artifacts" \
+#     lcs-inference-onnx:latest \
+#     onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
+#
+# Predict:
+#   docker run --rm --user "$(id -u):$(id -g)" \
+#     -v "$PWD/artifacts/runs/exp1:/run:ro" \
+#     -v "$PWD/data/loveda/Train/Rural/images_png/0.png:/input/0.png:ro" \
+#     -v "$PWD/output:/output" \
+#     lcs-inference-onnx:latest \
+#     onnx predict-onnx --run /run --onnx /run/model.onnx \
+#       --input /input/0.png --output /output/pred_0.png
+
+FROM python:3.12-slim-bookworm
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ENV PYTHONUNBUFFERED=1 \
+    MPLBACKEND=Agg \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        gdal-bin \
+        libgdal-dev \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock VERSION README.md ./
+COPY src/ src/
+COPY configs/ configs/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    UV_TORCH_BACKEND=cpu uv sync --frozen --extra onnx-inference --no-default-groups
+
+ENTRYPOINT ["lcs"]
+CMD ["onnx", "export", "--help"]
