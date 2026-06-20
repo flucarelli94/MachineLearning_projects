@@ -115,7 +115,8 @@ class ModelConfig:
     * `"smp"` (default) — U-Net via segmentation-models-pytorch; `encoder`, `encoder_weights`,
         and `in_channels` apply.
     * `"custom"` — calls `build_model` in `land_cover_segmentation.models.custom_model`
-        (fixed module path and function name; not configurable).
+        (fixed module path and function name; not configurable). Set `unet_features`
+        to control encoder/decoder width and depth.
 
     Attributes
     ----------
@@ -128,17 +129,27 @@ class ModelConfig:
         Pretrained encoder weights (`"imagenet"`) or `None`. Ignored when `source="custom"`.
     in_channels : int
         Input image channels. LoveDA RGB uses `3`.
+    unet_features : tuple[int, ...]
+        Per-level channel widths for the custom U-Net (one entry per encoder/decoder
+        level). Ignored when `source="smp"`.
     """
 
     source: str = "smp"
     encoder: str = "efficientnet-b0"
     encoder_weights: str | None = "imagenet"
     in_channels: int = 3
+    unet_features: tuple[int, ...] = (32, 64, 128, 256)
 
     def __post_init__(self) -> None:
         if self.source not in ("smp", "custom"):
             raise ValueError(
                 f"Unsupported model.source {self.source!r}; expected 'smp' or 'custom'."
+            )
+        if isinstance(self.unet_features, list):
+            object.__setattr__(self, "unet_features", tuple(self.unet_features))
+        if not self.unet_features or any(width <= 0 for width in self.unet_features):
+            raise ValueError(
+                "model.unet_features must be a non-empty tuple of positive channel widths"
             )
 
 

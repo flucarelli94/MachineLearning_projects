@@ -1,5 +1,6 @@
 """Tests for model construction and forward pass."""
 
+import pytest
 import torch
 
 from land_cover_segmentation.config import Config, DataConfig, ModelConfig
@@ -35,6 +36,23 @@ def test_factory_custom_matches_direct_build():
     )
     x = torch.randn(1, 3, 64, 64)
     assert build_model(cfg)(x).shape == build_custom_model(cfg)(x).shape
+
+
+@pytest.mark.parametrize(
+    "unet_features",
+    [
+        (16, 32, 64),
+        (8, 16, 32, 64, 128),
+    ],
+)
+def test_custom_unet_variable_features_depth(unet_features):
+    cfg = Config(
+        data=DataConfig(classes=["a", "b", "c"]),
+        model=ModelConfig(source="custom", in_channels=3, unet_features=unet_features),
+    )
+    model = build_custom_model(cfg)
+    x = torch.randn(2, 3, 64, 64)
+    assert model(x).shape == (2, 3, 64, 64)
 
 
 def test_factory_smp_forward_shape():

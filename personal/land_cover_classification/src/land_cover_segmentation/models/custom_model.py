@@ -8,7 +8,7 @@ uses the same pipeline contract as `model.source: smp` (logits of shape
 `(B, num_classes, H, W)` with no activation), but the architecture lives
 in this file so you can edit it without touching the training or inference
 code. `ModelConfig.encoder` / `encoder_weights` are ignored for the custom
-path.
+path; set `ModelConfig.unet_features` in YAML to change width and depth.
 """
 
 from __future__ import annotations
@@ -44,29 +44,31 @@ class _UNet(nn.Module):
         self,
         in_channels: int,
         num_classes: int,
-        features: tuple[int, ...] = (32, 64, 128, 256),
+        unet_features: tuple[int, ...],
     ) -> None:
         super().__init__()
-        f0, f1, f2, f3 = features
+        features = (in_channels, *unet_features)
 
-        self.enc1 = _ConvBlock(in_channels, f0)
-        self.enc2 = _ConvBlock(f0, f1)
-        self.enc3 = _ConvBlock(f1, f2)
-        self.enc4 = _ConvBlock(f2, f3)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.bottleneck = _ConvBlock(f3, f3 * 2)
+        self.encoders = nn.ModuleList(
+            _ConvBlock(in_ch, out_ch)
+            for in_ch, out_ch in zip(features[:-1], features[1:], strict=True)
+        )
 
-        self.up4 = nn.ConvTranspose2d(f3 * 2, f3, kernel_size=2, stride=2)
-        self.dec4 = _ConvBlock(f3 * 2, f3)
-        self.up3 = nn.ConvTranspose2d(f3, f2, kernel_size=2, stride=2)
-        self.dec3 = _ConvBlock(f2 * 2, f2)
-        self.up2 = nn.ConvTranspose2d(f2, f1, kernel_size=2, stride=2)
-        self.dec2 = _ConvBlock(f1 * 2, f1)
-        self.up1 = nn.ConvTranspose2d(f1, f0, kernel_size=2, stride=2)
-        self.dec1 = _ConvBlock(f0 * 2, f0)
+        deepest = features[-1]
+        self.bottleneck = _ConvBlock(deepest, deepest * 2)
 
-        self.head = nn.Conv2d(f0, num_classes, kernel_size=1)
+        decode_widths = (deepest * 2, *reversed(features[1:]))
+        self.upsamplers = nn.ModuleList(
+            nn.ConvTranspose2d(in_ch, out_ch, kernel_size=2, stride=2)
+            for in_ch, out_ch in zip(decode_widths[:-1], decode_widths[1:], strict=True)
+        )
+        self.decoders = nn.ModuleList(
+            _ConvBlock(out_ch * 2, out_ch) for out_ch in reversed(features[1:])
+        )
+
+        self.head = nn.Conv2d(features[1], num_classes, kernel_size=1)
 
     @staticmethod
     def _align(x: torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
@@ -80,22 +82,21 @@ class _UNet(nn.Module):
         return x[:, :, top:bottom, left:right]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        s1 = self.enc1(x)
-        s2 = self.enc2(self.pool(s1))
-        s3 = self.enc3(self.pool(s2))
-        s4 = self.enc4(self.pool(s3))
+        skips: list[torch.Tensor] = []
+        for encoder in self.encoders:
+            x = encoder(x)
+            skips.append(x)
+            x = self.pool(x)
 
-        b = self.bottleneck(self.pool(s4))
+        x = self.bottleneck(x)
 
-        d4 = self.up4(b)
-        d4 = self.dec4(torch.cat([self._align(d4, s4), s4], dim=1))
-        d3 = self.up3(d4)
-        d3 = self.dec3(torch.cat([self._align(d3, s3), s3], dim=1))
-        d2 = self.up2(d3)
-        d2 = self.dec2(torch.cat([self._align(d2, s2), s2], dim=1))
-        d1 = self.up1(d2)
-        d1 = self.dec1(torch.cat([self._align(d1, s1), s1], dim=1))
-        return self.head(d1)
+        for upsampler, decoder, skip in zip(
+            self.upsamplers, self.decoders, reversed(skips), strict=True
+        ):
+            x = upsampler(x)
+            x = decoder(torch.cat([self._align(x, skip), skip], dim=1))
+
+        return self.head(x)
 
 
 def build_model(cfg: Config) -> nn.Module:
@@ -104,8 +105,8 @@ def build_model(cfg: Config) -> nn.Module:
     Parameters
     ----------
     cfg : Config
-        Full project configuration. Reads `cfg.model.in_channels` and
-        `cfg.data.num_classes`.
+        Full project configuration. Reads `cfg.model.in_channels`,
+        `cfg.model.unet_features`, and `cfg.data.num_classes`.
 
     Returns
     -------
@@ -116,4 +117,8 @@ def build_model(cfg: Config) -> nn.Module:
     return _UNet(
         in_channels=cfg.model.in_channels,
         num_classes=cfg.data.num_classes,
+        unet_features=cfg.model.unet_features,
     )
+
+
+__all__ = ["build_model"]

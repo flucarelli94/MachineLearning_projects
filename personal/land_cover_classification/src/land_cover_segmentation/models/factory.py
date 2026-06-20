@@ -47,9 +47,10 @@ def build_model(cfg: Config) -> nn.Module:
 
     logger.info(
         "Building segmentation model: custom _UNet("
-        "in_channels=%d, classes=%d)",
+        "in_channels=%d, classes=%d, features=%s)",
         cfg.model.in_channels,
         cfg.data.num_classes,
+        cfg.model.unet_features,
     )
     return custom_model.build_model(cfg)
 

@@ -43,6 +43,7 @@ def test_model_config_keys():
         "encoder",
         "encoder_weights",
         "in_channels",
+        "unet_features",
     }
 
 
@@ -216,6 +217,15 @@ class TestLoad:
         assert cfg.model.encoder == "efficientnet-b0"
 
     @staticmethod
+    def test_applies_unet_features(tmp_path: Path):
+        yaml_path = tmp_path / "cfg.yaml"
+        yaml_path.write_text(
+            "model:\n  source: custom\n  unet_features: [16, 32, 64]\n"
+        )
+        cfg = load(yaml_path)
+        assert cfg.model.unet_features == (16, 32, 64)
+
+    @staticmethod
     def test_applies_overrides(tmp_path: Path):
         yaml_path = tmp_path / "cfg.yaml"
         yaml_path.write_text(
@@ -249,6 +259,11 @@ def test_dump_round_trip_preserves_model(tmp_path: Path):
     assert loaded.model.encoder == "mobilenet_v2"
     assert loaded.model.encoder_weights is None
     assert loaded.data.root == config.data.root
+
+
+def test_model_config_rejects_empty_unet_features():
+    with pytest.raises(ValueError, match="model.unet_features"):
+        ModelConfig(source="custom", unet_features=())
 
 
 @pytest.mark.parametrize("profile", os.listdir(CONFIGS_DIR))
