@@ -6,27 +6,47 @@ Semantic segmentation prototype for [LoveDA](https://github.com/Junjue-Wang/Love
 
 Requires Python 3.10+.
 
+Dependencies are split into optional extras (pip) and dependency groups (uv), aligned with
+CLI commands. A bare `pip install .` only installs the CLI shell (`click`, `numpy`, `pyyaml`);
+install the extras you need, or `all` for the full stack.
+
+| Extra / group | CLI commands | Pulls in |
+| --- | --- | --- |
+| `data` | `lcs data download` | TorchGeo |
+| `training` | `lcs model train` | `data` + PyTorch, smp, albumentations |
+| `evaluation` | `lcs model evaluate` | `training` + matplotlib, pillow |
+| `inference` | `lcs model predict` | PyTorch, smp, rasterio, matplotlib |
+| `onnx-inference` | `lcs onnx export`, `lcs onnx predict-onnx` | `inference` + onnx, onnxruntime |
+| `all` | all of the above | every extra |
+
 ### For users (recommended)
 
-Install a fixed copy of the package into your environment (not editable — suitable for
-training, inference, and downloading data):
+Install a fixed copy of the package (not editable):
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 python -m pip install -U pip
-pip install .
+pip install ".[all]"
 ```
 
 Run this from the project root after cloning or unpacking the source. This registers the
 `lcs` console script on your `PATH` inside the virtual environment.
 
-To reinstall after pulling updates: `pip install .` again (or `pip install --upgrade .`).
+Selective installs:
 
-**PyTorch note:** `pip install .` pulls `torch` and `torchvision` from PyPI. For a specific
-CUDA build, install them first from the
-[PyTorch install selector](https://pytorch.org/get-started/locally/), then run
-`pip install .`.
+```bash
+pip install ".[data]"              # download only
+pip install ".[training]"          # train (+ data)
+pip install ".[onnx-inference]"    # export + ONNX predict
+```
+
+To reinstall after pulling updates: `pip install ".[all]"` again (or add `--upgrade`).
+
+**PyTorch note:** the extras pull `torch` and `torchvision` from PyPI. For a specific CUDA
+build, install them first from the
+[PyTorch install selector](https://pytorch.org/get-started/locally/), then install the
+package extras.
 
 ### For developers
 
@@ -36,10 +56,11 @@ Editable install — source changes take effect without reinstalling:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
-pip install -e .
+pip install -e ".[all]"
 ```
 
-Dev tools (pytest, ruff, Jupyter):
+Dev tools (pytest, ruff, Jupyter) are included when using `uv sync` below, or install
+manually:
 
 ```bash
 pip install pytest ruff ipykernel jupyterlab
@@ -50,7 +71,14 @@ pip install pytest ruff ipykernel jupyterlab
 If you use [uv](https://docs.astral.sh/uv/) for development:
 
 ```bash
-uv sync
+uv sync   # dev group: all CLI groups + pytest, ruff, Jupyter
+```
+
+Selective groups:
+
+```bash
+uv sync --group training
+uv sync --group onnx-inference
 ```
 
 Then prefix commands below with `uv run` (e.g. `uv run lcs data download`).
@@ -141,7 +169,7 @@ uv run lcs model train --config configs/base.yaml --run-name my-run
 | `configs/base.yaml` | Default GPU run (EfficientNet-B0 U-Net, 30 epochs, full data) |
 | `configs/full.yaml` | Longer GPU run (50 epochs) |
 | `configs/fast.yaml` | CPU smoke test (MobileNetV2, 5 epochs, 50% data subset, 256 px crops) |
-| `configs/custom.yaml` | Custom architecture via `model.source: custom` |
+| `configs/custom.yaml` | Custom U-Net via `model.source: custom` and `model.unet_features` |
 
 Normalization statistics are computed from the training split at setup time and stored in the
 checkpoint payload (`best.pth`), not in the YAML.
@@ -192,7 +220,8 @@ The exported graph is **only the segmentation network**:
 | **Output** | Multiclass logits `(batch, num_classes, height, width)` — no softmax inside the graph |
 
 Tiling, softmax, Gaussian blending, and GeoTIFF/PNG writers stay in Python. Normalization
-stats are stored in `best.pth` and copied into the ONNX sidecar metadata.
+stats are stored in `best.pth`, copied into the ONNX `.meta.json` sidecar on export, and
+read by `predict-onnx` from the checkpoint when present (otherwise from the sidecar).
 
 ## Predict
 
@@ -250,9 +279,10 @@ the data and 256 px crops, expect **~0.20–0.30** val mIoU after 5 epochs (the 
 
 - **Swap the smp encoder** — edit `model.encoder` and `model.encoder_weights` in
   `configs/*.yaml` (requires `model.source: smp`).
-- **Custom architecture** — set `model.source: custom` in YAML and implement
-  `build_model(cfg)` in `src/land_cover_segmentation/models/custom_model.py` (see
-  `configs/custom.yaml`).
+- **Custom U-Net** — set `model.source: custom` and tune `model.unet_features` (per-level
+  channel widths; one entry per encoder/decoder level) in YAML — see `configs/custom.yaml`.
+  Edit `build_model(cfg)` in `src/land_cover_segmentation/models/custom_model.py` only when
+  you need structural changes beyond width and depth.
 - **Data subset / RAM** — tune `data.fraction` (0–1] in YAML to use a deterministic subset of
   each split; useful for smoke runs (`fast.yaml` uses `0.5`).
 - **ONNX deployment** — `lcs onnx export --run … --output …` then
