@@ -162,9 +162,42 @@ lcs model evaluate --run ./artifacts/runs/smoke --split val --save-viz
 
 Output: `metrics.json` with mIoU, per-class IoU, pixel accuracy, and loss.
 
+## Export ONNX
+
+After training, export the best checkpoint to a portable ONNX graph (manual step — not run
+automatically during training):
+
+```bash
+lcs onnx export --run ./artifacts/runs/smoke \
+  --output ./artifacts/runs/smoke/model.onnx
+```
+
+Writes the ONNX file and a sibling `model.meta.json` sidecar. Override the checkpoint source:
+
+```bash
+lcs onnx export --run ./artifacts/runs/smoke \
+  --output ./artifacts/runs/smoke/deploy.onnx \
+  --checkpoint last.pth
+```
+
+`--output` is **required** — there is no default ONNX path.
+
+### ONNX I/O contract
+
+The exported graph is **only the segmentation network**:
+
+| | |
+| --- | --- |
+| **Input** | `float32` NCHW, already normalized with the run's `mean` / `std` (same as PyTorch predict) |
+| **Output** | Multiclass logits `(batch, num_classes, height, width)` — no softmax inside the graph |
+
+Tiling, softmax, Gaussian blending, and GeoTIFF/PNG writers stay in Python. Normalization
+stats are stored in `best.pth` and copied into the ONNX sidecar metadata.
+
 ## Predict
 
-Run tiled inference on a single RGB image (PNG or 3-band GeoTIFF):
+Run tiled inference on a single RGB image (PNG or 3-band GeoTIFF) using the PyTorch
+checkpoint (`best.pth`):
 
 ```bash
 lcs model predict --run ./artifacts/runs/smoke \
@@ -174,6 +207,15 @@ lcs model predict --run ./artifacts/runs/smoke \
 lcs model predict --run ./artifacts/runs/smoke \
   --input ./path/to/scene.tif \
   --output ./artifacts/runs/smoke/pred.tif
+```
+
+For ONNX Runtime inference, use the separate command (requires an exported model):
+
+```bash
+lcs onnx predict-onnx --run ./artifacts/runs/smoke \
+  --onnx ./artifacts/runs/smoke/model.onnx \
+  --input ./path/to/scene.tif \
+  --output ./artifacts/runs/smoke/pred_onnx.tif
 ```
 
 - **`.png`** — palette-colored RGB map with a compact legend below the image; margins where
@@ -213,7 +255,9 @@ the data and 256 px crops, expect **~0.20–0.30** val mIoU after 5 epochs (the 
   `configs/custom.yaml`).
 - **Data subset / RAM** — tune `data.fraction` (0–1] in YAML to use a deterministic subset of
   each split; useful for smoke runs (`fast.yaml` uses `0.5`).
+- **ONNX deployment** — `lcs onnx export --run … --output …` then
+  `lcs onnx predict-onnx --run … --onnx …`.
 - **Predict input** — `lcs model predict` expects a 3-band `uint8` RGB raster (GeoTIFF or PNG).
 
-Run `lcs model train --help`, `lcs model evaluate --help`, and `lcs model predict --help` for
-all CLI options.
+Run `lcs model train --help`, `lcs model evaluate --help`, `lcs model predict --help`,
+`lcs onnx export --help`, and `lcs onnx predict-onnx --help` for all CLI options.
