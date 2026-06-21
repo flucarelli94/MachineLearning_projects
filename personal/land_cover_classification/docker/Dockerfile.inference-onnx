@@ -1,15 +1,9 @@
-# ONNX export + inference image for land-cover segmentation.
+# ONNX Runtime inference image for land-cover segmentation (no PyTorch).
 #
 # Build:
 #   docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
 #
-# Export:
-#   docker run --rm --user "$(id -u):$(id -g)" \
-#     -v "$PWD/artifacts:/artifacts" \
-#     lcs-inference-onnx:latest \
-#     onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
-#
-# Predict:
+# Predict (export models with lcs-export-onnx image first):
 #   docker run --rm --user "$(id -u):$(id -g)" \
 #     -v "$PWD/artifacts/runs/exp1:/run:ro" \
 #     -v "$PWD/data/loveda/Train/Rural/images_png/0.png:/input/0.png:ro" \
@@ -43,7 +37,7 @@ COPY src/ src/
 COPY configs/ configs/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    UV_TORCH_BACKEND=cpu uv sync --frozen --extra onnx-inference --no-default-groups
+    uv sync --frozen --extra onnx-inference --no-default-groups
 
 ENTRYPOINT ["lcs"]
-CMD ["onnx", "export", "--help"]
+CMD ["onnx", "predict-onnx", "--help"]

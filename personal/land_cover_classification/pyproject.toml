@@ -35,10 +35,15 @@ inference = [
     "pillow>=10.2",
     "matplotlib>=3.8",
 ]
-onnx-inference = [
-    "land-cover-segmentation[inference]",
+onnx-export = [
+    "land-cover-segmentation[evaluation]",
     "onnx>=1.16",
+]
+onnx-inference = [
     "onnxruntime>=1.17",
+    "rasterio>=1.3",
+    "pillow>=10.2",
+    "matplotlib>=3.8",
 ]
 
 [dependency-groups]

@@ -16,7 +16,8 @@ need for each workflow.
 | `training` | `lcs model train` | `data` + PyTorch, smp, albumentations |
 | `evaluation` | `lcs model evaluate` (also covers train) | `training` + matplotlib, pillow |
 | `inference` | `lcs model predict` | PyTorch, smp, rasterio, matplotlib |
-| `onnx-inference` | `lcs onnx export`, `lcs onnx predict-onnx` | `inference` + onnx, onnxruntime |
+| `onnx-export` | `lcs onnx export` | `evaluation` + onnx |
+| `onnx-inference` | `lcs onnx predict-onnx` | onnxruntime, rasterio, pillow, matplotlib (no PyTorch) |
 
 ### For users (recommended)
 
@@ -38,10 +39,11 @@ Selective installs:
 pip install ".[data]"              # download only
 pip install ".[training]"          # train (+ data)
 pip install ".[inference]"         # PyTorch predict
-pip install ".[onnx-inference]"    # export + ONNX predict
+pip install ".[onnx-export]"       # ONNX export (needs PyTorch)
+pip install ".[onnx-inference]"    # ONNX predict only (no PyTorch)
 ```
 
-Combine extras when needed, e.g. `pip install ".[evaluation,inference,onnx-inference]"`.
+Combine extras when needed, e.g. `pip install ".[evaluation,onnx-export,onnx-inference]"`.
 
 To reinstall after pulling updates, re-run the same `pip install` command (add `--upgrade`
 if you want).
@@ -59,7 +61,7 @@ Editable install — source changes take effect without reinstalling:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
-pip install -e ".[evaluation,inference,onnx-inference]"
+pip install -e ".[evaluation,inference,onnx-export,onnx-inference]"
 ```
 
 Dev tools (pytest, ruff, Jupyter) with uv:
@@ -87,6 +89,7 @@ Selective extras:
 ```bash
 uv sync --extra training
 uv sync --extra evaluation
+uv sync --extra onnx-export
 uv sync --extra onnx-inference
 ```
 
@@ -95,17 +98,38 @@ or inference. Always pass `--extra …` or `--all-extras`.
 
 Then prefix commands below with `uv run` (e.g. `uv run lcs data download`).
 
+### Verify installs
+
+Full dev/test environment (all extras + pytest):
+
+```bash
+uv sync --all-extras --group dev
+uv run pytest
+```
+
+Slim ONNX predict-only environment (no PyTorch):
+
+```bash
+UV_PROJECT_ENVIRONMENT=.venv-onnx-inference uv sync --extra onnx-inference --no-default-groups
+UV_PROJECT_ENVIRONMENT=.venv-onnx-inference uv run lcs onnx predict-onnx --help
+```
+
+Use a separate `UV_PROJECT_ENVIRONMENT` so the slim sync does not overwrite your main dev
+`.venv`. Export still requires the `onnx-export` extra (or `lcs-export-onnx` Docker image).
+Predict-onnx requires the `{model.onnx}` sibling `model.meta.json` sidecar from export.
+
 ## Docker
 
-Three images under [`docker/`](docker/), built with [uv](https://docs.astral.sh/uv/) and aligned
+Four images under [`docker/`](docker/), built with [uv](https://docs.astral.sh/uv/) and aligned
 with pip extras. **Data and run artifacts are never copied into images** — bind-mount them at
 runtime.
 
 | Image | Dockerfile | uv extra | Use |
 | --- | --- | --- | --- |
 | `lcs-training` | `docker/Dockerfile.training` | `evaluation` | train, evaluate, download |
+| `lcs-export-onnx` | `docker/Dockerfile.export-onnx` | `onnx-export` | ONNX export |
 | `lcs-inference-pytorch` | `docker/Dockerfile.inference-pytorch` | `inference` | PyTorch predict |
-| `lcs-inference-onnx` | `docker/Dockerfile.inference-onnx` | `onnx-inference` | ONNX export + predict |
+| `lcs-inference-onnx` | `docker/Dockerfile.inference-onnx` | `onnx-inference` | ONNX predict (no PyTorch) |
 
 ### Mount points (inside the container)
 
@@ -147,6 +171,7 @@ docker build -f docker/Dockerfile.training \
   -t lcs-training:cuda .
 
 docker build -f docker/Dockerfile.inference-pytorch -t lcs-inference-pytorch:latest .
+docker build -f docker/Dockerfile.export-onnx -t lcs-export-onnx:latest .
 docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
 ```
 
@@ -186,14 +211,18 @@ docker run --rm --user "$(id -u):$(id -g)" \
   model predict --run /run --input /input/scene.tif --output /output/pred.tif
 ```
 
-ONNX export and predict:
+ONNX export (writes `model.onnx` and `model.meta.json` sidecar):
 
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   -v "$PWD/artifacts:/artifacts" \
-  lcs-inference-onnx:latest \
+  lcs-export-onnx:latest \
   onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
+```
 
+ONNX predict (requires export sidecar; no PyTorch in image):
+
+```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   -v "$PWD/artifacts/runs/exp1:/run:ro" \
   -v "$PWD/scene.tif:/input/scene.tif:ro" \
@@ -222,12 +251,16 @@ UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
   model predict --run /artifacts/runs/exp1 --input /input/scene.tif --output /output/pred.tif
 ```
 
-ONNX export and predict:
+ONNX export:
 
 ```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm inference-onnx \
+UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm export-onnx \
   onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx --opset 17
+```
 
+ONNX predict:
+
+```bash
 UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
   -v "$PWD/scene.tif:/input/scene.tif:ro" \
   -v "$PWD/output:/output" \
@@ -383,8 +416,8 @@ The exported graph is **only the segmentation network**:
 | **Output** | Multiclass logits `(batch, num_classes, height, width)` — no softmax inside the graph |
 
 Tiling, softmax, Gaussian blending, and GeoTIFF/PNG writers stay in Python. Normalization
-stats are stored in `best.pth`, copied into the ONNX `.meta.json` sidecar on export, and
-read by `predict-onnx` from the checkpoint when present (otherwise from the sidecar).
+stats are copied from the checkpoint into the ONNX `.meta.json` sidecar on export; the slim
+`onnx-inference` install reads them from that sidecar only (no `best.pth` required).
 
 ## Predict
 
@@ -401,7 +434,8 @@ lcs model predict --run ./artifacts/runs/smoke \
   --output ./artifacts/runs/smoke/pred.tif
 ```
 
-For ONNX Runtime inference, use the separate command (requires an exported model):
+For ONNX Runtime inference, use the separate command (requires an exported model and
+`model.meta.json` sidecar from export):
 
 ```bash
 lcs onnx predict-onnx --run ./artifacts/runs/smoke \
@@ -448,8 +482,8 @@ the data and 256 px crops, expect **~0.20–0.30** val mIoU after 5 epochs (the 
   you need structural changes beyond width and depth.
 - **Data subset / RAM** — tune `data.fraction` (0–1] in YAML to use a deterministic subset of
   each split; useful for smoke runs (`fast.yaml` uses `0.5`).
-- **ONNX deployment** — `lcs onnx export --run … --output …` then
-  `lcs onnx predict-onnx --run … --onnx …`.
+- **ONNX deployment** — export with `onnx-export` extra (`lcs onnx export --run … --output …`),
+  then predict with `onnx-inference` extra (`lcs onnx predict-onnx --run … --onnx …`).
 - **Predict input** — `lcs model predict` expects a 3-band `uint8` RGB raster (GeoTIFF or PNG).
 
 Run `lcs model train --help`, `lcs model evaluate --help`, `lcs model predict --help`,

@@ -18,6 +18,16 @@ services:
       - ../artifacts:/artifacts
     entrypoint: ["lcs"]
 
+  export-onnx:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.export-onnx
+    image: lcs-export-onnx:latest
+    user: "${UID}:${GID}"
+    volumes:
+      - ../artifacts:/artifacts
+    entrypoint: ["lcs"]
+
   inference-pytorch:
     build:
       context: ..

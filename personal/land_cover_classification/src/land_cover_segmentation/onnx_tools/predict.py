@@ -8,15 +8,14 @@ from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
-import torch
 
-from land_cover_segmentation.inference.predict import (
+from land_cover_segmentation.inference.tiling import (
     load_normalized_scene,
     reconstruct,
     tile_scene,
 )
 from land_cover_segmentation.inference.write import write_georaster, write_image
-from land_cover_segmentation.training.checkpoint import CheckpointIO
+from land_cover_segmentation.run_artifacts import load_run_config
 
 
 def load_onnx_session(onnx_path: Path) -> ort.InferenceSession:
@@ -91,22 +90,15 @@ def predict_scene_onnx(
 
 
 def _load_norm_stats(run_dir: Path, onnx_path: Path) -> tuple[list[float], list[float]]:
-    """Load normalization stats from a checkpoint or ONNX sidecar."""
-    checkpoint_path = CheckpointIO.default_checkpoint_path(run_dir)
-    if checkpoint_path.exists():
-        payload = torch.load(
-            checkpoint_path, map_location=torch.device("cpu"), weights_only=False
-        )
-        return payload["mean"], payload["std"]
-
+    """Load normalization stats from ONNX export sidecar or run metadata."""
     sidecar_path = Path(onnx_path).with_suffix(".meta.json")
     if sidecar_path.exists():
         sidecar = json.loads(sidecar_path.read_text())
         return sidecar["mean"], sidecar["std"]
 
     raise FileNotFoundError(
-        f"Missing normalization stats; expected {checkpoint_path.name} or "
-        f"{sidecar_path.name}."
+        f"Missing normalization stats; expected {sidecar_path.name} "
+        f"(export with `lcs onnx export --run ... --output ...`)."
     )
 
 
@@ -139,9 +131,9 @@ def predict_run(
     input_path = Path(input_path)
     output_path = Path(output_path)
 
-    cfg = CheckpointIO.load_run_config(run_dir)
-    mean, std = _load_norm_stats(run_dir, onnx_path)
     session = load_onnx_session(onnx_path)
+    cfg = load_run_config(run_dir)
+    mean, std = _load_norm_stats(run_dir, onnx_path)
 
     image_chw, georef_path, source_hwc = load_normalized_scene(
         input_path,

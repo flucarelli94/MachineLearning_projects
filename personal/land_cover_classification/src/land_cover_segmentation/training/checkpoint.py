@@ -12,7 +12,11 @@ import torch
 import torch.nn as nn
 
 from land_cover_segmentation import __version__
-from land_cover_segmentation.config import Config, load
+from land_cover_segmentation.config import Config
+from land_cover_segmentation.run_artifacts import (
+    default_checkpoint_path,
+    load_run_config,
+)
 
 
 class CheckpointIO:
@@ -57,15 +61,12 @@ class CheckpointIO:
         FileNotFoundError
             If `config.yaml` is missing under `run_dir`.
         """
-        path = Path(run_dir) / "config.yaml"
-        if not path.exists():
-            raise FileNotFoundError(f"Missing run config: {path}")
-        return load(path)
+        return load_run_config(run_dir)
 
     @staticmethod
     def default_checkpoint_path(run_dir: Path) -> Path:
         """Return the preferred checkpoint path for a run (`best.pth`)."""
-        return Path(run_dir) / "best.pth"
+        return default_checkpoint_path(run_dir)
 
     @staticmethod
     def load(

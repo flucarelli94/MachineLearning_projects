@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Generic utilities shared across the package.
 
 Filesystem helpers (used by the downloader and checkpoint writer), color
@@ -12,8 +14,6 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
-import torch
-from tqdm import tqdm
 
 
 def human_bytes(n: float) -> str:
@@ -130,6 +130,8 @@ def compute_channel_stats(
     sum_vals: np.ndarray | None = None
     sum_sq: np.ndarray | None = None
 
+    from tqdm import tqdm
+
     for idx in tqdm(indices, desc="Computing channel stats"):
         img = images[int(idx)]
         if img.dtype != np.uint8:
@@ -167,6 +169,8 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
         When `True`, prefer deterministic cuDNN kernels over faster
         non-deterministic ones.
     """
+    import torch
+
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -177,7 +181,7 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
         torch.backends.cudnn.benchmark = False
 
 
-def resolve_device(device: str) -> torch.device:
+def resolve_device(device: str) -> "torch.device":
     """Map a config device string to a `torch.device`.
 
     Parameters
@@ -191,6 +195,8 @@ def resolve_device(device: str) -> torch.device:
     torch.device
         Resolved compute device.
     """
+    import torch
+
     if device == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(device)

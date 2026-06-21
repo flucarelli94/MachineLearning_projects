@@ -7,7 +7,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 from matplotlib.colors import ListedColormap
 from PIL import Image, ImageDraw, ImageFont
 
@@ -96,7 +95,7 @@ def colorize_mask(
 
 
 def denormalize_image(
-    image_chw: np.ndarray | torch.Tensor,
+    image_chw: np.ndarray | "torch.Tensor",
     mean: Sequence[float],
     std: Sequence[float],
 ) -> np.ndarray:
@@ -114,7 +113,9 @@ def denormalize_image(
     np.ndarray
         Denormalized RGB image, dtype `uint8`.
     """
-    if isinstance(image_chw, torch.Tensor):
+    if type(image_chw).__module__ == "torch" and type(image_chw).__name__ == "Tensor":
+        import torch
+
         image_chw = image_chw.detach().cpu().numpy()
     if image_chw.ndim != 3 or image_chw.shape[0] != 3:
         raise ValueError(f"image_chw must have shape (3, H, W), got {image_chw.shape}")

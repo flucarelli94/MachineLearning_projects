@@ -95,3 +95,45 @@ def test_predict_run_onnx_missing_model_raises(trained_run_dir, synthetic_geotif
     missing = tmp_path / "missing.onnx"
     with pytest.raises(FileNotFoundError, match="Missing ONNX model"):
         predict_run(trained_run_dir, missing, synthetic_geotiff, out_path)
+
+def test_load_norm_stats_from_onnx_sidecar(trained_run_dir, tmp_path):
+    from land_cover_segmentation.onnx_tools.predict import _load_norm_stats
+
+    onnx_path = export_run_to_onnx(trained_run_dir, output_path=tmp_path / "model.onnx")
+    mean, std = _load_norm_stats(trained_run_dir, onnx_path)
+    assert isinstance(mean, list)
+    assert isinstance(std, list)
+    assert len(mean) == len(std) == 3
+
+
+def test_load_norm_stats_missing_sidecar_raises(trained_run_dir, tmp_path):
+    from land_cover_segmentation.onnx_tools.predict import _load_norm_stats
+
+    with pytest.raises(FileNotFoundError, match="model.meta.json"):
+        _load_norm_stats(trained_run_dir, tmp_path / "model.onnx")
+
+
+def test_onnx_predict_module_imports_without_torch(monkeypatch):
+    """Slim onnx-inference extra must not pull PyTorch at import time."""
+    import builtins
+    import importlib
+    import sys
+
+    real_import = builtins.__import__
+
+    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "torch" or name.startswith("torch."):
+            raise ImportError(f"blocked import: {name}")
+        return real_import(name, globals, locals, fromlist, level)
+
+    prefixes = (
+        "land_cover_segmentation.inference",
+        "land_cover_segmentation.onnx_tools",
+    )
+    for mod in list(sys.modules):
+        if mod.startswith(prefixes):
+            del sys.modules[mod]
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    importlib.import_module("land_cover_segmentation.onnx_tools.predict")
+
