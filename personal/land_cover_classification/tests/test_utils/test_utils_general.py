@@ -1,4 +1,12 @@
+from pathlib import Path
+
+import land_cover_segmentation
 from land_cover_segmentation.utils.general import dir_size, hex_to_rgb, human_bytes
+
+
+def test_version_matches_version_file():
+    expected = (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip()
+    assert land_cover_segmentation.__version__ == expected
 
 
 def test_human_bytes():

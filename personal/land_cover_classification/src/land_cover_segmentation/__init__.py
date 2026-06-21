@@ -1,3 +1,11 @@
 """Land cover semantic segmentation prototype (LoveDA)."""
 
-__version__ = "0.0.0"
+from pathlib import Path
+
+
+def _package_version() -> str:
+    version_file = Path(__file__).resolve().parents[2] / "VERSION"
+    return version_file.read_text(encoding="utf-8").strip()
+
+
+__version__ = _package_version()
