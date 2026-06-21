@@ -232,7 +232,14 @@ docker run --rm --user "$(id -u):$(id -g)" \
     --input /input/scene.tif --output /output/pred.tif
 ```
 
-Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership):
+Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership).
+
+| Service | Image | Use |
+| --- | --- | --- |
+| `training` | `lcs-training:cpu` | train, evaluate, download |
+| `export-onnx` | `lcs-export-onnx:latest` | ONNX export |
+| `inference-pytorch` | `lcs-inference-pytorch:latest` | PyTorch predict |
+| `inference-onnx` | `lcs-inference-onnx:latest` | ONNX predict |
 
 Train:
 
@@ -380,6 +387,10 @@ Output: `metrics.json` with mIoU, per-class IoU, pixel accuracy, and loss.
 
 ## Export ONNX
 
+Requires the **`onnx-export`** extra (`pip install ".[onnx-export]"` or
+`uv sync --extra onnx-export`). Alternatively, use the `lcs-export-onnx` Docker image (see
+Docker section).
+
 After training, export the best checkpoint to a portable ONNX graph (manual step — not run
 automatically during training):
 
@@ -434,8 +445,9 @@ lcs model predict --run ./artifacts/runs/smoke \
   --output ./artifacts/runs/smoke/pred.tif
 ```
 
-For ONNX Runtime inference, use the separate command (requires an exported model and
-`model.meta.json` sidecar from export):
+For ONNX Runtime inference, use the separate command. Requires the **`onnx-inference`**
+extra (`pip install ".[onnx-inference]"` or `uv sync --extra onnx-inference`), an exported
+`.onnx` model, and the `model.meta.json` sidecar from export:
 
 ```bash
 lcs onnx predict-onnx --run ./artifacts/runs/smoke \
