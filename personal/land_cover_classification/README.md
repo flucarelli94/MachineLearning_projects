@@ -205,9 +205,35 @@ docker run --rm --user "$(id -u):$(id -g)" \
 
 Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership):
 
+Train:
+
 ```bash
 UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm training \
   model train --config configs/docker/fast.yaml --run-name exp1
+```
+
+PyTorch predict (add input/output bind mounts; run dir is under the preconfigured `/artifacts` mount):
+
+```bash
+UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  inference-pytorch \
+  model predict --run /artifacts/runs/exp1 --input /input/scene.tif --output /output/pred.tif
+```
+
+ONNX export and predict:
+
+```bash
+UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm inference-onnx \
+  onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx --opset 17
+
+UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  inference-onnx \
+  onnx predict-onnx --run /artifacts/runs/exp1 --onnx /artifacts/runs/exp1/model.onnx \
+    --input /input/scene.tif --output /output/pred.tif
 ```
 
 ## Download the dataset
@@ -335,6 +361,14 @@ Writes the ONNX file and a sibling `model.meta.json` sidecar. Override the check
 lcs onnx export --run ./artifacts/runs/smoke \
   --output ./artifacts/runs/smoke/deploy.onnx \
   --checkpoint last.pth
+```
+
+Override the ONNX opset (default **17**):
+
+```bash
+lcs onnx export --run ./artifacts/runs/smoke \
+  --output ./artifacts/runs/smoke/model.onnx \
+  --opset 17
 ```
 
 `--output` is **required** — there is no default ONNX path.
