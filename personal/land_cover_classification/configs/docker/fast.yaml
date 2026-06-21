@@ -20,4 +20,4 @@ run:
 train:
   artifacts_root: /artifacts/runs
   epochs: 1
-  patience: 3
+  patience: 1

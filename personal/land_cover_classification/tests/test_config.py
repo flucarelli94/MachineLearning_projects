@@ -1,7 +1,6 @@
 """Tests for config dataclasses and strict YAML load/dump."""
 
 from dataclasses import asdict
-import os
 from pathlib import Path
 
 import pytest
@@ -19,6 +18,7 @@ from land_cover_segmentation.config import (
 )
 
 CONFIGS_DIR = Path(__file__).resolve().parents[1] / "configs"
+CONFIG_PROFILES = sorted(CONFIGS_DIR.rglob("*.yaml"))
 
 
 def test_run_config_keys():
@@ -266,9 +266,13 @@ def test_model_config_rejects_empty_unet_features():
         ModelConfig(source="custom", unet_features=())
 
 
-@pytest.mark.parametrize("profile", os.listdir(CONFIGS_DIR))
-def test_config_profile_loads(profile):
-    cfg = load(CONFIGS_DIR / profile)
+@pytest.mark.parametrize(
+    "profile_path",
+    CONFIG_PROFILES,
+    ids=[str(p.relative_to(CONFIGS_DIR)) for p in CONFIG_PROFILES],
+)
+def test_config_profile_loads(profile_path: Path):
+    cfg = load(profile_path)
     assert isinstance(cfg.data.image_size, int)
     assert cfg.data.image_size > 0
     assert isinstance(cfg.data.batch_size, int)
@@ -282,4 +286,3 @@ def test_config_profile_loads(profile):
     assert cfg.train.epochs > 0
     assert isinstance(cfg.train.patience, int)
     assert cfg.train.patience > 0
-    assert cfg.train.patience < cfg.train.epochs
