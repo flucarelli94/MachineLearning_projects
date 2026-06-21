@@ -1,10 +1,9 @@
 """Generic utilities shared across the package (torch-free re-exports).
 
-Filesystem and color helpers, logging setup, and dataset statistics live
-here. PyTorch-specific helpers are in ``utils.model`` and are not re-exported.
+Filesystem and color helpers and logging setup are re-exported here.
+Dataset statistics live in ``utils.data``; PyTorch helpers in ``utils.model``.
 """
 
-from land_cover_segmentation.utils.data import compute_channel_stats
 from land_cover_segmentation.utils.general import (
     configure_logging,
     dir_size,
@@ -13,7 +12,6 @@ from land_cover_segmentation.utils.general import (
 )
 
 __all__ = [
-    "compute_channel_stats",
     "configure_logging",
     "dir_size",
     "hex_to_rgb",

@@ -27,7 +27,8 @@ from land_cover_segmentation.dataset.augmentation import (
     build_train_augmentation,
     build_val_augmentation,
 )
-from land_cover_segmentation.utils import compute_channel_stats, configure_logging
+from land_cover_segmentation.utils import configure_logging
+from land_cover_segmentation.utils.data import compute_channel_stats
 
 logger = configure_logging(__name__)
 

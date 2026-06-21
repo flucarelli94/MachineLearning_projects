@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import numpy as np
+from tqdm import tqdm
 
 
 def compute_channel_stats(
@@ -49,8 +50,6 @@ def compute_channel_stats(
     n_pixels = 0
     sum_vals: np.ndarray | None = None
     sum_sq: np.ndarray | None = None
-
-    from tqdm import tqdm
 
     for idx in tqdm(indices, desc="Computing channel stats"):
         img = images[int(idx)]
