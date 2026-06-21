@@ -29,21 +29,21 @@ Subset of splits (the option is repeatable)::
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
 
 from torchgeo.datasets import LoveDA
 
-Split = Literal["train", "val", "test"]
-Scene = Literal["urban", "rural"]
-
-VALID_SPLITS: tuple[Split, ...] = ("train", "val", "test")
-VALID_SCENES: tuple[Scene, ...] = ("urban", "rural")
+from land_cover_segmentation.config import (
+    LoveDAScene,
+    LoveDASplit,
+    VALID_SCENES,
+    VALID_SPLITS,
+)
 
 
 def download_loveda(
     root: Path | str = Path("./data/loveda"),
-    splits: Sequence[Split] = VALID_SPLITS,
-    scenes: Sequence[Scene] = VALID_SCENES,
+    splits: Sequence[LoveDASplit] = VALID_SPLITS,
+    scenes: Sequence[LoveDAScene] = VALID_SCENES,
     checksum: bool = True,
 ) -> dict[str, int]:
     """Download (or verify) LoveDA for the requested splits.
@@ -108,4 +108,4 @@ def download_loveda(
     return counts
 
 
-__all__ = ["download_loveda", "VALID_SPLITS", "VALID_SCENES"]
+__all__ = ["download_loveda"]

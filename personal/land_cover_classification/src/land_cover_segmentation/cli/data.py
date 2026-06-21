@@ -7,11 +7,7 @@ from pathlib import Path
 import click
 
 from land_cover_segmentation import utils
-from land_cover_segmentation.dataset.download import (
-    VALID_SCENES,
-    VALID_SPLITS,
-    download_loveda,
-)
+from land_cover_segmentation.config import VALID_SCENES, VALID_SPLITS
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -56,6 +52,8 @@ def download(
     checksum: bool,
 ) -> None:
     """Download LoveDA splits and report per-split sample counts."""
+    from land_cover_segmentation.dataset.download import download_loveda
+
     click.echo(f"Root: {root.resolve()}")
     click.echo(
         f"Splits: {list(splits)}    Scenes: {list(scenes)}    Checksum: {checksum}"

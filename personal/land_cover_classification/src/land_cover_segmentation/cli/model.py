@@ -8,11 +8,6 @@ from pathlib import Path
 import click
 
 from land_cover_segmentation.config import load
-from land_cover_segmentation.dataset.loveda import LoveDADataModule
-from land_cover_segmentation.inference.predict import predict_run
-from land_cover_segmentation.models.factory import build_model
-from land_cover_segmentation.training.evaluator import Split, evaluate_run
-from land_cover_segmentation.training.trainer import Trainer
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -34,6 +29,10 @@ def model() -> None:
 )
 def train(config: Path, run_name: str | None) -> None:
     """Train a segmentation model and write run artifacts."""
+    from land_cover_segmentation.dataset.loveda import LoveDADataModule
+    from land_cover_segmentation.models.factory import build_model
+    from land_cover_segmentation.training.trainer import Trainer
+
     cfg = load(config)
     if run_name is not None:
         cfg = replace(cfg, run=replace(cfg.run, output_name=run_name))
@@ -70,8 +69,10 @@ def train(config: Path, run_name: str | None) -> None:
     default=False,
     help="Write predictions.png qualitative grid.",
 )
-def evaluate(run_dir: Path, split: Split, save_viz: bool) -> None:
+def evaluate(run_dir: Path, split: str, save_viz: bool) -> None:
     """Evaluate a trained run and write metrics.json."""
+    from land_cover_segmentation.training.evaluator import evaluate_run
+
     metrics = evaluate_run(run_dir, split=split, save_viz=save_viz)
 
     click.echo(f"Split: {metrics['split']}")
@@ -111,6 +112,8 @@ def predict(
     output_path: Path,
 ) -> None:
     """Predict a land-cover map for an input image (PyTorch checkpoint)."""
+    from land_cover_segmentation.inference.predict import predict_run
+
     out = predict_run(run_dir, input_path, output_path)
     click.echo(f"Prediction written to {out}")
 

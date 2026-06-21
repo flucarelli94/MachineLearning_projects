@@ -7,11 +7,17 @@ loss (via `LossConfig`), and training loop configuration (via `TrainConfig`).
 
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 import yaml
 
 # Default LoveDA constants.
+LoveDASplit = Literal["train", "val", "test"]
+LoveDAScene = Literal["urban", "rural"]
+
+VALID_SPLITS: tuple[LoveDASplit, ...] = ("train", "val", "test")
+VALID_SCENES: tuple[LoveDAScene, ...] = ("urban", "rural")
+
 _LOVEDA_CLASSES: list[str] = [
     "background",
     "building",
@@ -81,7 +87,7 @@ class DataConfig:
     """
 
     root: str = "./data/loveda"
-    scene: list[str] = field(default_factory=lambda: ["urban", "rural"])
+    scene: list[str] = field(default_factory=lambda: list(VALID_SCENES))
     image_size: int = 512
     batch_size: int = 8
     num_workers: int = 4
@@ -392,10 +398,14 @@ __all__ = [
     "Config",
     "DataConfig",
     "LossConfig",
+    "LoveDAScene",
+    "LoveDASplit",
     "ModelConfig",
     "OptimConfig",
     "RunConfig",
     "TrainConfig",
-    "load",
+    "VALID_SCENES",
+    "VALID_SPLITS",
     "dump",
+    "load",
 ]

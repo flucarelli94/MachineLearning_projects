@@ -6,9 +6,6 @@ from pathlib import Path
 
 import click
 
-from land_cover_segmentation.onnx_tools.export_onnx import export_run_to_onnx
-from land_cover_segmentation.onnx_tools.predict import predict_run as predict_onnx_run
-
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def onnx() -> None:
@@ -59,6 +56,8 @@ def predict_onnx(
     output_path: Path,
 ) -> None:
     """Predict a land-cover map using an ONNX Runtime session."""
+    from land_cover_segmentation.onnx_tools.predict import predict_run as predict_onnx_run
+
     out = predict_onnx_run(run_dir, onnx_path, input_path, output_path)
     click.echo(f"Prediction written to {out}")
 
@@ -98,6 +97,8 @@ def export(
     opset: int,
 ) -> None:
     """Export a trained checkpoint to ONNX (+ JSON metadata sidecar)."""
+    from land_cover_segmentation.onnx_tools.export_onnx import export_run_to_onnx
+
     checkpoint_path = _resolve_checkpoint_path(run_dir, checkpoint)
     written = export_run_to_onnx(
         run_dir,

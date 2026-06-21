@@ -13,7 +13,6 @@ import torch.nn as nn
 
 from land_cover_segmentation import __version__
 from land_cover_segmentation.config import Config, load
-from land_cover_segmentation.dataset.loveda import LoveDADataModule
 
 
 class CheckpointIO:
@@ -32,7 +31,7 @@ class CheckpointIO:
     def __init__(
         self,
         cfg: Config,
-        datamodule: LoveDADataModule,
+        datamodule: "LoveDADataModule",
         run_dir: Path,
     ) -> None:
         self.cfg = cfg
