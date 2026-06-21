@@ -25,11 +25,8 @@ from land_cover_segmentation.training.evaluator import (
 )
 from land_cover_segmentation.training.losses import DiceCELoss
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
-from land_cover_segmentation.utils import (
-    configure_logging,
-    resolve_device,
-    seed_everything,
-)
+from land_cover_segmentation.utils import configure_logging
+from land_cover_segmentation.utils.model import resolve_device, seed_everything
 
 logger = configure_logging(__name__)
 

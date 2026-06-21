@@ -13,7 +13,7 @@ import torch.nn as nn
 
 from land_cover_segmentation import __version__
 from land_cover_segmentation.config import Config
-from land_cover_segmentation.run_artifacts import (
+from land_cover_segmentation.utils.runs import (
     default_checkpoint_path,
     load_run_config,
 )

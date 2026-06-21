@@ -15,6 +15,11 @@ def test_checkpoint_io_load_run_config_missing_file(tmp_path):
         CheckpointIO.load_run_config(tmp_path)
 
 
+def test_checkpoint_io_load_run_config_missing_file(tmp_path):
+    with pytest.raises(FileNotFoundError, match="config.yaml"):
+        CheckpointIO.load_run_config(tmp_path)
+
+
 def test_checkpoint_io_writes_pth_and_meta(stub_data_module_cls, tmp_path):
     model = nn.Linear(4, 2)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)

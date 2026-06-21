@@ -124,16 +124,22 @@ def test_onnx_predict_module_imports_without_torch(monkeypatch):
     def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
         if name == "torch" or name.startswith("torch."):
             raise ImportError(f"blocked import: {name}")
+        if name == "land_cover_segmentation.utils.model" or name.endswith(
+            ".utils.model"
+        ):
+            raise ImportError(f"blocked import: {name}")
         return real_import(name, globals, locals, fromlist, level)
 
     prefixes = (
         "land_cover_segmentation.inference",
         "land_cover_segmentation.onnx_tools",
+        "land_cover_segmentation.utils",
     )
     for mod in list(sys.modules):
         if mod.startswith(prefixes):
             del sys.modules[mod]
 
     monkeypatch.setattr(builtins, "__import__", guarded_import)
+    importlib.import_module("land_cover_segmentation.utils")
     importlib.import_module("land_cover_segmentation.onnx_tools.predict")
 

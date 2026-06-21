@@ -15,7 +15,7 @@ from land_cover_segmentation.inference.tiling import (
     tile_scene,
 )
 from land_cover_segmentation.inference.write import write_georaster, write_image
-from land_cover_segmentation.run_artifacts import load_run_config
+from land_cover_segmentation.utils.runs import load_run_config
 
 
 def load_onnx_session(onnx_path: Path) -> ort.InferenceSession:

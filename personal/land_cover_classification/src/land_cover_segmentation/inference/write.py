@@ -11,7 +11,7 @@ from PIL import Image
 from rasterio.transform import Affine
 
 from land_cover_segmentation.utils import hex_to_rgb
-from land_cover_segmentation.visualization import (
+from land_cover_segmentation.utils.visualization import (
     attach_outside_legend,
     colorize_mask,
     content_bbox,

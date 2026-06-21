@@ -17,7 +17,7 @@ from land_cover_segmentation.inference.tiling import (
 from land_cover_segmentation.inference.write import write_georaster, write_image
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.training.checkpoint import CheckpointIO
-from land_cover_segmentation.utils import resolve_device
+from land_cover_segmentation.utils.model import resolve_device
 
 
 @torch.no_grad()

@@ -2,8 +2,8 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 
 from land_cover_segmentation.config import Config
-from land_cover_segmentation.utils import hex_to_rgb
-from land_cover_segmentation.visualization import (
+from land_cover_segmentation.utils.general import hex_to_rgb
+from land_cover_segmentation.utils.visualization import (
     colorize_mask,
     content_bbox,
     denormalize_image,

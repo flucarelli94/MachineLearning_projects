@@ -19,8 +19,8 @@ from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.training.losses import DiceCELoss
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 from land_cover_segmentation.models.factory import build_model
-from land_cover_segmentation.utils import resolve_device, seed_everything
-from land_cover_segmentation.visualization import (
+from land_cover_segmentation.utils.model import resolve_device, seed_everything
+from land_cover_segmentation.utils.visualization import (
     denormalize_image,
     save_prediction_grid,
 )
