@@ -26,6 +26,7 @@ from land_cover_segmentation.utils.visualization import (
 Split = Literal["val", "test"]
 DEFAULT_VIZ_SAMPLES = 4
 
+
 def metrics_from_confusion(
     cm: StreamingConfusionMatrix,
     loss: float,
@@ -45,6 +46,7 @@ def metrics_from_confusion(
             None if isinstance(v, float) and math.isnan(v) else v for v in per_class_f1
         ],
     }
+
 
 @torch.no_grad()
 def evaluate_loader(
@@ -100,6 +102,7 @@ def evaluate_loader(
         cm.update(logits.argmax(dim=1), masks)
 
     return metrics_from_confusion(cm, loss_sum / max(num_batches, 1))
+
 
 @torch.no_grad()
 def save_png_predictions(
@@ -171,6 +174,7 @@ def save_png_predictions(
         ignore_index=cfg.data.ignore_index,
     )
 
+
 def evaluate_run(
     run_dir: Path,
     split: Split = "val",
@@ -186,6 +190,10 @@ def evaluate_run(
         Directory containing `config.yaml` and `best.pth`.
     split : {"val", "test"}, optional
         Dataset split to evaluate.
+    save_viz : bool, optional
+        Whether to save a qualitative PNG grid of predictions.
+    viz_samples : int, optional
+        Number of rows in the output grid.
 
     Returns
     -------
@@ -212,9 +220,7 @@ def evaluate_run(
     ).to(device)
 
     loader = (
-        datamodule.val_dataloader()
-        if split == "val"
-        else datamodule.test_dataloader()
+        datamodule.val_dataloader() if split == "val" else datamodule.test_dataloader()
     )
     metrics = evaluate_loader(model, loader, loss_fn, cfg, device, desc=split)
     output = {"split": split, **metrics}
@@ -236,12 +242,14 @@ def evaluate_run(
 
     return output
 
+
 def _load_class_weights(run_dir: Path) -> torch.Tensor | None:
     path = run_dir / "class_weights.json"
     if not path.exists():
         return None
     raw = json.loads(path.read_text())
     return torch.tensor(raw["weights"], dtype=torch.float32)
+
 
 __all__ = [
     "DEFAULT_VIZ_SAMPLES",

@@ -28,6 +28,7 @@ from land_cover_segmentation.utils.model import resolve_device, seed_everything
 
 logger = configure_logging(__name__)
 
+
 class Trainer:
     """Train a segmentation model with AdamW, AMP, and streaming val metrics.
 
@@ -211,6 +212,28 @@ class Trainer:
         autocast_device: str,
         epoch: int,
     ) -> dict[str, Any]:
+        """Train a single epoch.
+
+        Parameters
+        ----------
+        loader : DataLoader
+            The data loader.
+        loss_fn : DiceCELoss
+            The loss function.
+        optimizer : torch.optim.Optimizer
+            The optimizer.
+        scaler : torch.amp.GradScaler
+            The gradient scaler.
+        autocast_device : str
+            The device type.
+        epoch : int
+            The current epoch.
+
+        Returns
+        -------
+        dict
+            The metrics for the epoch.
+        """
         self.model.train()
         cm = StreamingConfusionMatrix(
             self.cfg.data.num_classes, self.cfg.data.ignore_index
@@ -254,6 +277,7 @@ class Trainer:
         loader: DataLoader,
         loss_fn: DiceCELoss,
     ) -> dict[str, Any]:
+        """Validate a single epoch."""
         return evaluate_loader(
             self.model,
             loader,
@@ -263,7 +287,9 @@ class Trainer:
             desc="val",
         )
 
+
 def _build_param_groups(model: nn.Module, cfg: Config) -> list[dict[str, Any]]:
+    """Build the parameter groups for the optimizer."""
     if cfg.model.source == "smp" and hasattr(model, "encoder"):
         encoder_ids = {id(p) for p in model.encoder.parameters()}
         encoder_params: list[nn.Parameter] = []
@@ -279,11 +305,13 @@ def _build_param_groups(model: nn.Module, cfg: Config) -> list[dict[str, Any]]:
         ]
     return [{"params": list(model.parameters())}]
 
+
 def _build_scheduler(
     optimizer: torch.optim.Optimizer,
     cfg: Config,
     num_groups: int,
 ) -> LambdaLR:
+    """Build the scheduler for the optimizer."""
     warmup = cfg.optim.encoder_lr_warmup_epochs
     total = cfg.train.epochs
     enc_scale = cfg.optim.encoder_lr_scale
@@ -316,11 +344,13 @@ def _build_scheduler(
 
     return LambdaLR(optimizer, lr_lambda=single_lambda)
 
+
 def _load_or_compute_class_weights(
     cfg: Config,
     datamodule: LoveDADataModule,
     run_dir: Path,
 ) -> torch.Tensor:
+    """Load or compute the class weights."""
     cache_path = run_dir / "class_weights.json"
     if cache_path.exists():
         raw = json.loads(cache_path.read_text())
@@ -346,7 +376,9 @@ def _load_or_compute_class_weights(
     logger.info("Computed and cached class weights to %s", cache_path)
     return weights
 
+
 def _class_pixel_counts(cfg: Config, datamodule: LoveDADataModule) -> torch.Tensor:
+    """Compute the pixel counts per class."""
     datamodule._require_setup()
     raw = datamodule._train_ds_raw
     if raw is None:
@@ -362,12 +394,14 @@ def _class_pixel_counts(cfg: Config, datamodule: LoveDADataModule) -> torch.Tens
         counts += torch.bincount(labels, minlength=cfg.data.num_classes).double()
     return counts
 
+
 def _log_epoch(
     epoch: int,
     train_metrics: dict[str, Any],
     val_metrics: dict[str, Any],
     optimizer: torch.optim.Optimizer,
 ) -> None:
+    """Log the epoch metrics."""
     lrs = [group["lr"] for group in optimizer.param_groups]
     lr_str = ", ".join(f"{lr:.2e}" for lr in lrs)
     logger.info(
@@ -379,5 +413,6 @@ def _log_epoch(
         val_metrics["miou"],
         lr_str,
     )
+
 
 __all__ = ["Trainer"]
