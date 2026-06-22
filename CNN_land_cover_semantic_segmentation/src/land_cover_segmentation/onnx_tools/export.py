@@ -12,6 +12,7 @@ from land_cover_segmentation import __version__
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.training.checkpoint import CheckpointIO
 
+
 def export_run_to_onnx(
     run_dir: Path,
     *,
@@ -28,7 +29,7 @@ def export_run_to_onnx(
     checkpoint_path : pathlib.Path or None, optional
         Checkpoint to load. Defaults to `run_dir / "best.pth"`.
     output_path : pathlib.Path
-        Destination ``.onnx`` file to write (required).
+        Destination `.onnx` file to write (required).
     opset_version : int, optional
         ONNX opset version passed to `torch.onnx.export`.
 
@@ -110,5 +111,6 @@ def export_run_to_onnx(
     output_path.with_suffix(".meta.json").write_text(json.dumps(sidecar, indent=2))
 
     return output_path
+
 
 __all__ = ["export_run_to_onnx"]

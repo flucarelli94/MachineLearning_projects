@@ -34,6 +34,7 @@ logger = configure_logging(__name__)
 
 STATS_MAX_SAMPLES = 1000
 
+
 def _loveda_image_hwc_uint8(image: torch.Tensor) -> np.ndarray:
     """Convert a torchgeo LoveDA image tensor to HWC uint8 numpy."""
     arr = np.transpose(image.detach().cpu().numpy(), (1, 2, 0))
@@ -41,13 +42,14 @@ def _loveda_image_hwc_uint8(image: torch.Tensor) -> np.ndarray:
         return arr
     return np.clip(arr, 0, 255).astype(np.uint8)
 
+
 def _subset_indices(n: int, fraction: float, seed: int) -> list[int]:
-    """Return sorted indices for a deterministic random subset of size ``k``.
+    """Return sorted indices for a deterministic random subset of size `k`.
 
     Parameters
     ----------
     n : int
-        Size of the full index range ``0..n-1``.
+        Size of the full index range `0..n-1`.
     fraction : float
         Fraction in `(0, 1]` of indices to keep.
     seed : int
@@ -56,13 +58,14 @@ def _subset_indices(n: int, fraction: float, seed: int) -> list[int]:
     Returns
     -------
     list[int]
-        Sorted subset indices, length ``max(1, int(n * fraction))`` capped at ``n``.
+        Sorted subset indices, length `max(1, int(n * fraction))` capped at `n`.
     """
     k = max(1, int(n * fraction))
     if k >= n:
         return list(range(n))
     rng = np.random.default_rng(seed)
     return sorted(rng.choice(n, size=k, replace=False).tolist())
+
 
 class _ImageView(Sequence):
     """Lazy sequence view of a torchgeo LoveDA dataset's images as HWC
@@ -81,6 +84,7 @@ class _ImageView(Sequence):
 
     def __getitem__(self, idx: int) -> np.ndarray:
         return _loveda_image_hwc_uint8(self._ds[idx]["image"])
+
 
 class _LoveDAAdapter(torch.utils.data.Dataset):
     """Wrap a torchgeo LoveDA split with an Albumentations pipeline.
@@ -134,6 +138,7 @@ class _LoveDAAdapter(torch.utils.data.Dataset):
         """
         self._transform.set_random_seed(seed)
 
+
 def _worker_init_fn(worker_id: int) -> None:
     """Per-worker reseed for Albumentations augmentations.
 
@@ -148,6 +153,7 @@ def _worker_init_fn(worker_id: int) -> None:
     ds = info.dataset
     if hasattr(ds, "set_seed"):
         ds.set_seed(info.seed)
+
 
 class LoveDADataModule:
     """LoveDA datamodule: download → adapt → transform → loader.
@@ -353,5 +359,6 @@ class LoveDADataModule:
             raise RuntimeError(
                 "LoveDADataModule.setup() must be called before accessing this property"
             )
+
 
 __all__ = ["LoveDADataModule", "STATS_MAX_SAMPLES", "_subset_indices"]

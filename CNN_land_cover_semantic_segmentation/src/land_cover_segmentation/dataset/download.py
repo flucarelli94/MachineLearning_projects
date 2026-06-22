@@ -1,15 +1,15 @@
 """Bootstrap the LoveDA dataset.
 
-Download via the CLI: ``uv run lcs data download``.
+Download via the CLI: `uv run lcs data download`.
 
-This module exposes ``download_loveda()`` for programmatic use. The Click
-command lives in ``land_cover_segmentation.cli``.
+This module exposes `download_loveda()` for programmatic use. The Click
+command lives in `land_cover_segmentation.cli`.
 
 Roughly **20 GB** on disk for a full download (train + val + test, urban +
 rural). Subsequent runs skip files that already exist on disk.
 
 TorchGeo ships one archive per split; each zip contains both urban and rural.
-The ``scenes`` argument filters verification and sample counts, not download
+The `scenes` argument filters verification and sample counts, not download
 size.
 
 Examples

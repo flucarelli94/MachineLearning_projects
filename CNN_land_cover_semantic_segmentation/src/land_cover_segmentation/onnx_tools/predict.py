@@ -15,6 +15,7 @@ from land_cover_segmentation.inference.tiling import (
 from land_cover_segmentation.inference.write import write_georaster, write_image
 from land_cover_segmentation.utils.runs import load_run_config
 
+
 def load_onnx_session(onnx_path: Path) -> ort.InferenceSession:
     """Load an ONNX model for CPU inference."""
     onnx_path = Path(onnx_path)
@@ -25,11 +26,13 @@ def load_onnx_session(onnx_path: Path) -> ort.InferenceSession:
         providers=["CPUExecutionProvider"],
     )
 
+
 def _softmax_logits(logits: np.ndarray, axis: int = 1) -> np.ndarray:
-    """Apply numerically stable softmax along ``axis``."""
+    """Apply numerically stable softmax along `axis`."""
     shifted = logits - logits.max(axis=axis, keepdims=True)
     exp = np.exp(shifted)
     return (exp / exp.sum(axis=axis, keepdims=True)).astype(np.float32)
+
 
 def _tiled_prob_maps(
     image_chw: np.ndarray,
@@ -43,7 +46,9 @@ def _tiled_prob_maps(
     tiles, positions = tile_scene(image_chw, tile=tile, overlap=overlap)
     prob_tiles: list[np.ndarray] = []
     for start in range(0, len(tiles), batch_size):
-        batch = np.stack(tiles[start : start + batch_size]).astype(np.float32, copy=False)
+        batch = np.stack(tiles[start : start + batch_size]).astype(
+            np.float32, copy=False
+        )
         logits = run_batch(batch)
         prob_tiles.extend(_softmax_logits(logits, axis=1))
 
@@ -58,6 +63,7 @@ def _tiled_prob_maps(
     )
     class_map = prob_map.argmax(axis=0).astype(np.uint8)
     return prob_map, class_map
+
 
 def predict_scene_onnx(
     session: ort.InferenceSession,
@@ -82,6 +88,7 @@ def predict_scene_onnx(
         run_batch,
     )
 
+
 def _load_norm_stats(run_dir: Path, onnx_path: Path) -> tuple[list[float], list[float]]:
     """Load normalization stats from ONNX export sidecar or run metadata."""
     sidecar_path = Path(onnx_path).with_suffix(".meta.json")
@@ -93,6 +100,7 @@ def _load_norm_stats(run_dir: Path, onnx_path: Path) -> tuple[list[float], list[
         f"Missing normalization stats; expected {sidecar_path.name} "
         f"(export with `lcs onnx export --run ... --output ...`)."
     )
+
 
 def predict_run(
     run_dir: Path,
@@ -159,6 +167,7 @@ def predict_run(
             cfg.data.palette,
         )
     return output_path
+
 
 __all__ = [
     "load_onnx_session",

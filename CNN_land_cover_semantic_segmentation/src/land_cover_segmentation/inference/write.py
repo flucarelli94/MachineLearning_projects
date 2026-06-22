@@ -93,8 +93,8 @@ def write_image(
         `(H, W, 3)` source image used to crop away black LoveDA padding before
         saving. When omitted, only predicted-background margins are trimmed.
     class_names : Sequence[str] or None, optional
-        Human-readable class labels for the legend. Defaults to ``Class 0``,
-        ``Class 1``, ...
+        Human-readable class labels for the legend. Defaults to `Class 0`,
+        `Class 1`, ...
     """
     rgb = colorize_mask(class_map, palette, ignore_index=ignore_index)
     bboxes = [content_bbox_from_valid(class_map != 0)]
