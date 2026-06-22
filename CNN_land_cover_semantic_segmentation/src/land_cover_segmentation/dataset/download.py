@@ -39,6 +39,35 @@ from land_cover_segmentation.config import (
     VALID_SPLITS,
 )
 
+
+def validate_inputs(
+    input_elements: Sequence[LoveDASplit | LoveDAScene],
+    valid_elements: Sequence[LoveDASplit | LoveDAScene],
+    element_type: str,
+) -> None:
+    """Validate the input elements against the valid elements.
+
+    Parameters
+    ----------
+    input_elements : Sequence[LoveDASplit | LoveDAScene]
+        The input elements to validate.
+    valid_elements : Sequence[LoveDASplit | LoveDAScene]
+        The valid elements.
+    element_type : str
+        The type of the elements to validate.
+
+    Raises
+    ------
+    ValueError
+        If the input elements contain unknown elements.
+    """
+    bad_elements = [e for e in input_elements if e not in valid_elements]
+    if bad_elements:
+        raise ValueError(
+            f"unknown {element_type} {bad_elements}; allowed: {valid_elements}"
+        )
+
+
 def download_loveda(
     root: Path | str = Path("./data/loveda"),
     splits: Sequence[LoveDASplit] = VALID_SPLITS,
@@ -84,12 +113,8 @@ def download_loveda(
     how you plan to load the dataset later (e.g. urban only), not to reduce
     bandwidth or disk usage on a fresh download.
     """
-    bad_splits = [s for s in splits if s not in VALID_SPLITS]
-    if bad_splits:
-        raise ValueError(f"unknown splits {bad_splits}; allowed: {VALID_SPLITS}")
-    bad_scenes = [s for s in scenes if s not in VALID_SCENES]
-    if bad_scenes:
-        raise ValueError(f"unknown scenes {bad_scenes}; allowed: {VALID_SCENES}")
+    validate_inputs(splits, VALID_SPLITS, "split")
+    validate_inputs(scenes, VALID_SCENES, "scene")
 
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
@@ -105,5 +130,6 @@ def download_loveda(
         )
         counts[split] = len(ds)
     return counts
+
 
 __all__ = ["download_loveda"]
