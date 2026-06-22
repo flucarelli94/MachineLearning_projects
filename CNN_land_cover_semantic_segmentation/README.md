@@ -183,13 +183,10 @@ docker compose -f docker/docker-compose.yml build
 
 ### Run examples
 
-Use `--user "$(id -u):$(id -g)"` so files written to bind mounts (e.g. `/artifacts`,
-`/output`) are owned by your host user, not root.
-
 Train (CPU smoke image, mounted data + artifacts):
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" \
+docker run --rm \
   -v "$PWD/data/loveda:/data/loveda" \
   -v "$PWD/artifacts:/artifacts" \
   lcs-training:cpu \
@@ -203,7 +200,7 @@ Example: same mounts as above with `--config configs/docker/base.yaml`.
 PyTorch predict:
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" \
+docker run --rm \
   -v "$PWD/artifacts/runs/exp1:/run:ro" \
   -v "$PWD/scene.tif:/input/scene.tif:ro" \
   -v "$PWD/output:/output" \
@@ -214,7 +211,7 @@ docker run --rm --user "$(id -u):$(id -g)" \
 ONNX export (writes `model.onnx` and `model.meta.json` sidecar):
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" \
+docker run --rm \
   -v "$PWD/artifacts:/artifacts" \
   lcs-export-onnx:latest \
   onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
@@ -223,7 +220,7 @@ docker run --rm --user "$(id -u):$(id -g)" \
 ONNX predict (requires export sidecar; no PyTorch in image):
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" \
+docker run --rm \
   -v "$PWD/artifacts/runs/exp1:/run:ro" \
   -v "$PWD/scene.tif:/input/scene.tif:ro" \
   -v "$PWD/output:/output" \
@@ -232,7 +229,7 @@ docker run --rm --user "$(id -u):$(id -g)" \
     --input /input/scene.tif --output /output/pred.tif
 ```
 
-Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership).
+Compose wrapper (same mounts preconfigured).
 
 | Service | Image | Use |
 | --- | --- | --- |
@@ -244,14 +241,14 @@ Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership).
 Train:
 
 ```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm training \
+docker compose -f docker/docker-compose.yml run --rm training \
   model train --config configs/docker/fast.yaml --run-name exp1
 ```
 
 PyTorch predict (add input/output bind mounts; run dir is under the preconfigured `/artifacts` mount):
 
 ```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
+docker compose -f docker/docker-compose.yml run --rm \
   -v "$PWD/scene.tif:/input/scene.tif:ro" \
   -v "$PWD/output:/output" \
   inference-pytorch \
@@ -261,14 +258,14 @@ UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
 ONNX export:
 
 ```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm export-onnx \
+docker compose -f docker/docker-compose.yml run --rm export-onnx \
   onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx --opset 17
 ```
 
 ONNX predict:
 
 ```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
+docker compose -f docker/docker-compose.yml run --rm \
   -v "$PWD/scene.tif:/input/scene.tif:ro" \
   -v "$PWD/output:/output" \
   inference-onnx \

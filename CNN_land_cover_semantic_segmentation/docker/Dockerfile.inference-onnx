@@ -4,7 +4,7 @@
 #   docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
 #
 # Predict (export models with lcs-export-onnx image first):
-#   docker run --rm --user "$(id -u):$(id -g)" \
+#   docker run --rm \
 #     -v "$PWD/artifacts/runs/exp1:/run:ro" \
 #     -v "$PWD/data/loveda/Train/Rural/images_png/0.png:/input/0.png:ro" \
 #     -v "$PWD/output:/output" \

@@ -4,10 +4,10 @@
 #   docker build -f docker/Dockerfile.inference-pytorch -t lcs-inference-pytorch:latest .
 #
 # Run:
-#   docker run --rm --user "$(id -u):$(id -g)" \
+#   docker run --rm \
 #     -v "$PWD/artifacts/runs/exp1:/run:ro" \
-#     -v "$PWD/data/loveda/Train/Rural/images_png/0.png:/input/0.png:ro" \
-#     -v "$PWD/output:/output" \
+#     -v "$PWD/data/loveda/Train/Rural/images_png/2.png:/input/2.png:ro" \
+#     -v "$PWD/artifacts/runs/exp1/output:/output" \
 #     lcs-inference-pytorch:latest \
 #     model predict --run /run --input /input/2.png --output /output/pred_2.png
 
