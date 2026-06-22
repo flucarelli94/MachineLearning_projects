@@ -1,0 +1,59 @@
+# Training + evaluation image for land-cover segmentation.
+#
+# Build (CUDA, default):
+#   docker build -f docker/Dockerfile.training --build-arg BUILD_TARGET=cuda -t lcs-training:cuda .
+#
+# Build (CPU smoke):
+#   docker build -f docker/Dockerfile.training --build-arg BUILD_TARGET=cpu -t lcs-training:cpu .
+#
+# Run (CUDA):
+#   docker run --rm --user "$(id -u):$(id -g)" --gpus all \
+#     -v "$PWD/data/loveda:/data/loveda" \
+#     -v "$PWD/artifacts:/artifacts" \
+#     lcs-training:cuda \
+#     model train --config configs/docker/fast.yaml --run-name exp1
+#
+# Run (CPU):
+#   docker run --rm --user "$(id -u):$(id -g)" \
+#     -v "$PWD/data/loveda:/data/loveda" \
+#     -v "$PWD/artifacts:/artifacts" \
+#     lcs-training:cpu \
+#     model train --config configs/docker/fast.yaml --run-name exp1
+#
+ARG BUILD_TARGET=cuda
+
+FROM python:3.12-slim-bookworm
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ARG BUILD_TARGET
+
+ENV PYTHONUNBUFFERED=1 \
+    MPLBACKEND=Agg \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Dependencies layer (cache-friendly): lock + metadata first, then source.
+COPY pyproject.toml uv.lock VERSION README.md ./
+COPY src/ src/
+COPY configs/ configs/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    if [ "$BUILD_TARGET" = "cuda" ]; then \
+        UV_TORCH_BACKEND=cu121 uv sync --extra evaluation --no-default-groups; \
+    else \
+        UV_TORCH_BACKEND=cpu uv sync --frozen --extra evaluation --no-default-groups; \
+    fi
+
+ENTRYPOINT ["lcs"]
+CMD ["--help"]

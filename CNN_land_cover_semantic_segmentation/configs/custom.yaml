@@ -1,0 +1,17 @@
+# Training profile using the custom U-Net architecture in models/custom_model.py.
+# Edit custom_model.build_model() to change the architecture; encoder settings below are ignored.
+
+data:
+  image_size: 512
+  batch_size: 8
+  num_workers: 4
+  fraction: 1.0
+
+model:
+  source: custom
+  in_channels: 3
+  unet_features: [32, 64, 128, 256]
+
+train:
+  epochs: 30
+  patience: 6

@@ -1,0 +1,49 @@
+# Run from the project root:
+#   UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm training model train --help
+#
+# Build all images:
+#   docker compose -f docker/docker-compose.yml build
+
+services:
+  training:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.training
+      args:
+        BUILD_TARGET: cpu
+    image: lcs-training:cpu
+    user: "${UID}:${GID}"
+    volumes:
+      - ../data/loveda:/data/loveda
+      - ../artifacts:/artifacts
+    entrypoint: ["lcs"]
+
+  export-onnx:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.export-onnx
+    image: lcs-export-onnx:latest
+    user: "${UID}:${GID}"
+    volumes:
+      - ../artifacts:/artifacts
+    entrypoint: ["lcs"]
+
+  inference-pytorch:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.inference-pytorch
+    image: lcs-inference-pytorch:latest
+    user: "${UID}:${GID}"
+    volumes:
+      - ../artifacts:/artifacts
+    entrypoint: ["lcs"]
+
+  inference-onnx:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.inference-onnx
+    image: lcs-inference-onnx:latest
+    user: "${UID}:${GID}"
+    volumes:
+      - ../artifacts:/artifacts
+    entrypoint: ["lcs"]
