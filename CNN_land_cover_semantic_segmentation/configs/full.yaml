@@ -1,0 +1,17 @@
+# Long GPU run — same data/model settings as base, extended training.
+
+data:
+  image_size: 512
+  batch_size: 8
+  num_workers: 4
+  fraction: 1.0
+
+model:
+  source: smp
+  encoder: efficientnet-b0
+  encoder_weights: imagenet
+  in_channels: 3
+
+train:
+  epochs: 50
+  patience: 10

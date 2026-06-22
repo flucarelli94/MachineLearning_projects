@@ -1,0 +1,23 @@
+# fast.yaml training settings + Docker mount paths
+
+data:
+  root: /data/loveda
+  image_size: 256
+  batch_size: 4
+  num_workers: 0
+  fraction: 0.2
+
+model:
+  source: smp
+  encoder: mobilenet_v2
+  encoder_weights: null
+  in_channels: 3
+
+run:
+  device: cpu
+  output_name: fast
+
+train:
+  artifacts_root: /artifacts/runs
+  epochs: 1
+  patience: 1

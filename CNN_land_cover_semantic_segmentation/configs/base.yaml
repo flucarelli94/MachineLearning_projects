@@ -1,0 +1,17 @@
+# Default GPU training profile for LoveDA.
+
+data:
+  image_size: 512
+  batch_size: 8
+  num_workers: 4
+  fraction: 1.0
+
+model:
+  source: smp
+  encoder: efficientnet-b0
+  encoder_weights: imagenet
+  in_channels: 3
+
+train:
+  epochs: 30
+  patience: 6

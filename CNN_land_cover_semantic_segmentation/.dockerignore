@@ -1,0 +1,37 @@
+# Virtual environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Version control and IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+.cursor/
+
+# Heavy / runtime data (mounted at container runtime)
+data/
+artifacts/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+src/*.egg-info/
+
+# Notebooks and logs
+.ipynb_checkpoints/
+*.log
+
+# Tests (not needed in runtime images)
+tests/
