@@ -44,3 +44,16 @@ Covered topics:
  * Performance visualization (**confusion matrix**)
  * **Overtraining** check
  * ML algorithms: **Logistic regression**, **Linear Discriminant Analysis**, **Decision Tree**, **Random forest**, **kNN**
+
+# CNN land cover semantic segmentation
+Contains a **semantic segmentation** prototype for land cover classification on the [LoveDA](https://github.com/Junjue-Wang/LoveDA) dataset (RGB imagery, 7 classes).</br>
+Covered topics:
+ * Deep learning with **PyTorch** and **segmentation-models-pytorch**
+ * Geospatial data loading with **TorchGeo**
+ * Data augmentation (**albumentations**)
+ * Model training, evaluation, and checkpointing
+ * Tiled inference on large rasters (**rasterio**)
+ * **ONNX** export and inference
+ * **Docker** workflows for training and inference
+ * CLI tooling (`lcs`) for download, train, evaluate, predict, and ONNX export
+ * ML algorithms: **U-Net** and related CNN encoders (ResNet, EfficientNet, etc.)
