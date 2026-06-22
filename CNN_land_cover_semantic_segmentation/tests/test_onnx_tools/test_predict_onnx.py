@@ -7,7 +7,7 @@ import torch
 
 from land_cover_segmentation.inference.predict import predict_scene
 from land_cover_segmentation.models.factory import build_model
-from land_cover_segmentation.onnx_tools.export_onnx import export_run_to_onnx
+from land_cover_segmentation.onnx_tools.export import export_run_to_onnx
 from land_cover_segmentation.onnx_tools.predict import (
     load_onnx_session,
     predict_run,

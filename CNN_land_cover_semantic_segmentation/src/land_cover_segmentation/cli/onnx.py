@@ -53,7 +53,7 @@ def export(
     opset: int,
 ) -> None:
     """Export a trained checkpoint to ONNX (+ JSON metadata sidecar)."""
-    from land_cover_segmentation.onnx_tools.export_onnx import export_run_to_onnx
+    from land_cover_segmentation.onnx_tools.export import export_run_to_onnx
 
     checkpoint_path = _resolve_checkpoint_path(run_dir, checkpoint)
     written = export_run_to_onnx(
