@@ -4,12 +4,14 @@ from pathlib import Path
 
 import click
 
-from land_cover_segmentation import utils
+from land_cover_segmentation.utils.general import human_bytes, dir_size
 from land_cover_segmentation.config import VALID_SCENES, VALID_SPLITS
+
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def data() -> None:
     """Dataset download and preparation."""
+
 
 @data.command("download")
 @click.option(
@@ -59,8 +61,7 @@ def download(
 
     for split, n in counts.items():
         click.echo(f"  {split}: {n} samples")
-    click.echo(
-        f"\nDone. Total on disk under {root}: {utils.human_bytes(utils.dir_size(root))}"
-    )
+    click.echo(f"\nDone. Total on disk under {root}: {human_bytes(dir_size(root))}")
+
 
 __all__ = ["data", "download"]
