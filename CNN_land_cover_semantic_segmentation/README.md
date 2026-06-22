@@ -2,6 +2,34 @@
 
 Semantic segmentation prototype for [LoveDA](https://github.com/Junjue-Wang/LoveDA) land cover (RGB, 7 classes). Built with PyTorch, [segmentation-models-pytorch](https://github.com/qubvel/segmentation_models.pytorch), and [TorchGeo](https://github.com/microsoft/torchgeo).
 
+## Table of contents
+
+- [Install](#install)
+  - [For users (recommended)](#for-users-recommended)
+  - [For developers](#for-developers)
+  - [With uv (optional)](#with-uv-optional)
+  - [Verify installs](#verify-installs)
+- [Download the dataset](#download-the-dataset)
+  - [Default download](#default-download)
+  - [Custom destination](#custom-destination)
+  - [Subset of splits](#subset-of-splits)
+  - [Scene filter](#scene-filter)
+  - [Skip checksum verification](#skip-checksum-verification)
+  - [Notes](#notes)
+- [Train](#train)
+  - [Config profiles](#config-profiles)
+- [Evaluate](#evaluate)
+- [Export ONNX](#export-onnx)
+  - [ONNX I/O contract](#onnx-io-contract)
+- [Predict](#predict)
+- [Docker](#docker)
+  - [Mount points (inside the container)](#mount-points-inside-the-container)
+  - [Docker config profiles](#docker-config-profiles)
+  - [Build](#build)
+  - [Run examples](#run-examples)
+- [Expected mIoU](#expected-miou)
+- [Known limitations](#known-limitations)
+
 ## Install
 
 Requires Python 3.10+.
