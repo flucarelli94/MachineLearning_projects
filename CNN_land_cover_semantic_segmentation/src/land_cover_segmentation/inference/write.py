@@ -1,4 +1,4 @@
-"""Write semantic segmentation predictions to georeferenced GeoTIFF files."""
+"""Write semantic segmentation predictions to georeferenced GeoTIFF files or RGB PNGs."""
 
 from collections.abc import Sequence
 from pathlib import Path
@@ -17,6 +17,7 @@ from land_cover_segmentation.utils.visualization import (
     crop_to_content,
     intersect_bboxes,
 )
+
 
 def write_georaster(
     class_map: np.ndarray,
@@ -65,6 +66,7 @@ def write_georaster(
             1,
             {index: hex_to_rgb(color) + (255,) for index, color in enumerate(palette)},
         )
+
 
 def write_image(
     class_map: np.ndarray,
@@ -115,5 +117,6 @@ def write_image(
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(rgb, mode="RGB").save(out_path)
+
 
 __all__ = ["write_georaster", "write_image"]

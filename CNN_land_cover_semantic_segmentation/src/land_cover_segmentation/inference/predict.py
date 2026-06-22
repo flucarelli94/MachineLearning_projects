@@ -17,6 +17,7 @@ from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.utils.model import resolve_device
 
+
 @torch.no_grad()
 def predict_scene(
     model: nn.Module,
@@ -27,7 +28,30 @@ def predict_scene(
     batch_size: int = 8,
     device: str | torch.device = "cuda",
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Run tiled inference and return probabilities plus a class map."""
+    """Run tiled inference and return probabilities plus a class map.
+
+    Parameters
+    ----------
+    model : nn.Module
+        The model to run inference on.
+    image_chw : np.ndarray
+        The image to run inference on.
+    num_classes : int
+        The number of classes in the model.
+    tile : int, optional
+        The size of the tile to use for inference.
+    overlap : int, optional
+        The overlap between tiles for inference.
+    batch_size : int, optional
+        The batch size to use for inference.
+    device : str or torch.device, optional
+        The device to use for inference.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        The probabilities and class map.
+    """
     torch_device = torch.device(device)
     model.eval()
     model.to(torch_device)
@@ -52,12 +76,28 @@ def predict_scene(
     class_map = prob_map.argmax(axis=0).astype(np.uint8)
     return prob_map, class_map
 
+
 def predict_run(
     run_dir: Path,
     input_path: Path,
     output_path: Path,
 ) -> Path:
-    """Run tiled inference for a trained model and write a class-map GeoTIFF."""
+    """Run tiled inference for a trained model and write a class-map GeoTIFF or PNG.
+
+    Parameters
+    ----------
+    run_dir : pathlib.Path
+        The training run directory.
+    input_path : pathlib.Path
+        The input image path.
+    output_path : pathlib.Path
+        The output path.
+
+    Returns
+    -------
+    pathlib.Path
+        The output path.
+    """
     run_dir = Path(run_dir)
     input_path = Path(input_path)
     output_path = Path(output_path)
@@ -97,14 +137,17 @@ def predict_run(
             reference_rgb=source_hwc,
             class_names=cfg.data.classes,
         )
-    else:
+    elif output_path.suffix.lower() == ".tif":
         write_georaster(
             class_map,
             georef_path,
             output_path,
             cfg.data.palette,
         )
+    else:
+        raise ValueError(f"Unsupported output format: {output_path.suffix}")
     return output_path
+
 
 __all__ = [
     "load_normalized_scene",
