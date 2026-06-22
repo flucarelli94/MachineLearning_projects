@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -89,7 +90,7 @@ def colorize_mask(
     return rgb
 
 def denormalize_image(
-    image_chw: np.ndarray | "torch.Tensor",
+    image_chw: Union[np.ndarray, "torch.Tensor"],
     mean: Sequence[float],
     std: Sequence[float],
 ) -> np.ndarray:
