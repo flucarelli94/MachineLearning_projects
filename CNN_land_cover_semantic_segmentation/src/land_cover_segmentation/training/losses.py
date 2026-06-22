@@ -7,7 +7,6 @@ import torch.nn as nn
 from torch.nn import functional
 from segmentation_models_pytorch.losses import DiceLoss
 
-
 class DiceCELoss(nn.Module):
     """0.5 * cross-entropy + 0.5 * multiclass Dice on raw logits.
 
@@ -59,6 +58,5 @@ class DiceCELoss(nn.Module):
         ce = self.ce_loss(logits, target)
         dice = self.dice_loss(logits, target)
         return 0.5 * ce + 0.5 * dice
-
 
 __all__ = ["DiceCELoss"]

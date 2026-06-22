@@ -1,7 +1,5 @@
 """Checkpoint and run-artifact I/O for training and evaluation."""
 
-from __future__ import annotations
-
 import json
 import math
 from datetime import UTC, datetime
@@ -17,7 +15,6 @@ from land_cover_segmentation.utils.runs import (
     default_checkpoint_path,
     load_run_config,
 )
-
 
 class CheckpointIO:
     """Read and write PyTorch checkpoints plus JSON metadata sidecars.
@@ -183,6 +180,5 @@ class CheckpointIO:
         path.with_suffix(".meta.json").write_text(json.dumps(meta, indent=2))
         if is_best:
             (self.run_dir / "meta.json").write_text(json.dumps(meta, indent=2))
-
 
 __all__ = ["CheckpointIO"]

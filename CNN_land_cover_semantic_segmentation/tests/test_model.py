@@ -7,7 +7,6 @@ from land_cover_segmentation.config import Config, DataConfig, ModelConfig
 from land_cover_segmentation.models.custom_model import build_model as build_custom_model
 from land_cover_segmentation.models.factory import build_model
 
-
 def test_custom_unet_forward_shape():
     cfg = Config(
         data=DataConfig(classes=["a", "b", "c"]),
@@ -19,7 +18,6 @@ def test_custom_unet_forward_shape():
     assert logits.shape == (2, 3, 64, 64)
     assert logits.dtype == torch.float32
 
-
 def test_custom_unet_backward():
     cfg = Config(model=ModelConfig(source="custom", in_channels=3))
     model = build_custom_model(cfg)
@@ -28,7 +26,6 @@ def test_custom_unet_backward():
     loss.backward()
     assert any(p.grad is not None for p in model.parameters())
 
-
 def test_factory_custom_matches_direct_build():
     cfg = Config(
         data=DataConfig(classes=["a", "b", "c"]),
@@ -36,7 +33,6 @@ def test_factory_custom_matches_direct_build():
     )
     x = torch.randn(1, 3, 64, 64)
     assert build_model(cfg)(x).shape == build_custom_model(cfg)(x).shape
-
 
 @pytest.mark.parametrize(
     "unet_features",
@@ -53,7 +49,6 @@ def test_custom_unet_variable_features_depth(unet_features):
     model = build_custom_model(cfg)
     x = torch.randn(2, 3, 64, 64)
     assert model(x).shape == (2, 3, 64, 64)
-
 
 def test_factory_smp_forward_shape():
     cfg = Config(

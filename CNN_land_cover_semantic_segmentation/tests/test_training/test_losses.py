@@ -4,7 +4,6 @@ import torch
 
 from land_cover_segmentation.training.losses import DiceCELoss
 
-
 def test_dice_ce_loss_forward_and_backward():
     loss_fn = DiceCELoss(ignore_index=255)
     logits = torch.randn(2, 3, 8, 8, requires_grad=True)
@@ -14,7 +13,6 @@ def test_dice_ce_loss_forward_and_backward():
     assert torch.isfinite(loss)
     loss.backward()
     assert logits.grad is not None
-
 
 def test_dice_ce_loss_ignores_index():
     loss_fn = DiceCELoss(ignore_index=255)
@@ -28,7 +26,6 @@ def test_dice_ce_loss_ignores_index():
     loss = loss_fn(logits, target)
     assert torch.isfinite(loss)
     loss.backward()
-
 
 def test_dice_ce_loss_accepts_class_weights():
     weights = torch.tensor([1.0, 2.0, 0.5])

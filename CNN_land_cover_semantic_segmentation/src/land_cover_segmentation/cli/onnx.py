@@ -1,16 +1,12 @@
 """Export and run ONNX models."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import click
 
-
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def onnx() -> None:
     """Export and run ONNX models."""
-
 
 def _resolve_checkpoint_path(run_dir: Path, checkpoint: str) -> Path:
     """Resolve a checkpoint CLI value to an absolute path."""
@@ -18,7 +14,6 @@ def _resolve_checkpoint_path(run_dir: Path, checkpoint: str) -> Path:
     if path.is_file():
         return path
     return run_dir / path.name
-
 
 @onnx.command("predict-onnx")
 @click.option(
@@ -60,7 +55,6 @@ def predict_onnx(
 
     out = predict_onnx_run(run_dir, onnx_path, input_path, output_path)
     click.echo(f"Prediction written to {out}")
-
 
 @onnx.command("export")
 @click.option(
@@ -109,6 +103,5 @@ def export(
     sidecar = written.with_suffix(".meta.json")
     click.echo(f"ONNX written to {written}")
     click.echo(f"Metadata written to {sidecar}")
-
 
 __all__ = ["export", "onnx", "predict_onnx"]

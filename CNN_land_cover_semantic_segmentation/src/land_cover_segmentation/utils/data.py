@@ -1,10 +1,8 @@
-from __future__ import annotations
 
 from collections.abc import Sequence
 
 import numpy as np
 from tqdm import tqdm
-
 
 def compute_channel_stats(
     images: Sequence[np.ndarray],
@@ -75,6 +73,5 @@ def compute_channel_stats(
     variance = np.maximum(sum_sq / n_pixels - mean * mean, 0.0)
     std = np.sqrt(variance)
     return mean.tolist(), std.tolist()
-
 
 __all__ = ["compute_channel_stats"]

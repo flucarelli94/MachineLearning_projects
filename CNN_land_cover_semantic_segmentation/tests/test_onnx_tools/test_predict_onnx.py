@@ -15,7 +15,6 @@ from land_cover_segmentation.onnx_tools.predict import (
 )
 from land_cover_segmentation.training.checkpoint import CheckpointIO
 
-
 def test_predict_scene_onnx_matches_pytorch(trained_run_dir, tmp_path):
     onnx_path = export_run_to_onnx(trained_run_dir, output_path=tmp_path / "model.onnx")
     session = load_onnx_session(onnx_path)
@@ -38,7 +37,6 @@ def test_predict_scene_onnx_matches_pytorch(trained_run_dir, tmp_path):
     assert pt_prob.shape == onnx_prob.shape == (num_classes, 80, 80)
     assert pt_class.shape == onnx_class.shape == (80, 80)
     assert np.mean(pt_class == onnx_class) >= 0.95
-
 
 def test_onnx_and_pytorch_predictions_are_similar(trained_run_dir, tmp_path):
     """ONNX Runtime and PyTorch should produce close probability maps and labels."""
@@ -77,7 +75,6 @@ def test_onnx_and_pytorch_predictions_are_similar(trained_run_dir, tmp_path):
         label_agreement = float(np.mean(pt_class == onnx_class))
         assert label_agreement >= 0.99
 
-
 def test_predict_run_onnx_writes_geotiff(trained_run_dir, tmp_path, synthetic_geotiff):
     onnx_path = tmp_path / "model.onnx"
     export_run_to_onnx(trained_run_dir, output_path=onnx_path)
@@ -88,7 +85,6 @@ def test_predict_run_onnx_writes_geotiff(trained_run_dir, tmp_path, synthetic_ge
     with rasterio.open(out_path) as dst:
         assert dst.count == 1
         assert dst.crs is not None
-
 
 def test_predict_run_onnx_missing_model_raises(trained_run_dir, synthetic_geotiff, tmp_path):
     out_path = tmp_path / "pred.tif"
@@ -105,13 +101,11 @@ def test_load_norm_stats_from_onnx_sidecar(trained_run_dir, tmp_path):
     assert isinstance(std, list)
     assert len(mean) == len(std) == 3
 
-
 def test_load_norm_stats_missing_sidecar_raises(trained_run_dir, tmp_path):
     from land_cover_segmentation.onnx_tools.predict import _load_norm_stats
 
     with pytest.raises(FileNotFoundError, match="model.meta.json"):
         _load_norm_stats(trained_run_dir, tmp_path / "model.onnx")
-
 
 def test_onnx_predict_module_imports_without_torch(monkeypatch):
     """Slim onnx-inference extra must not pull PyTorch at import time."""

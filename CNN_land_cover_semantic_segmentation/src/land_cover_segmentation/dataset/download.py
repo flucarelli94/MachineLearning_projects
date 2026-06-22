@@ -39,7 +39,6 @@ from land_cover_segmentation.config import (
     VALID_SPLITS,
 )
 
-
 def download_loveda(
     root: Path | str = Path("./data/loveda"),
     splits: Sequence[LoveDASplit] = VALID_SPLITS,
@@ -106,6 +105,5 @@ def download_loveda(
         )
         counts[split] = len(ds)
     return counts
-
 
 __all__ = ["download_loveda"]

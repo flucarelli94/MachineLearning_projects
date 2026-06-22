@@ -17,7 +17,6 @@ from land_cover_segmentation.config import (
 from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.models.factory import build_model
 
-
 @dataclass
 class StubDataModule:
     """Minimal stand-in for LoveDADataModule when only mean/std are needed."""
@@ -25,11 +24,9 @@ class StubDataModule:
     mean: list[float]
     std: list[float]
 
-
 @pytest.fixture
 def stub_data_module_cls():
     return StubDataModule
-
 
 @pytest.fixture
 def synthetic_geotiff(tmp_path):
@@ -49,7 +46,6 @@ def synthetic_geotiff(tmp_path):
     ) as dst:
         dst.write(data)
     return path
-
 
 @pytest.fixture
 def trained_run_dir(stub_data_module_cls, tmp_path):

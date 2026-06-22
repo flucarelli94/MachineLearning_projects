@@ -7,7 +7,6 @@ import pytest
 
 from land_cover_segmentation.onnx_tools.export_onnx import export_run_to_onnx
 
-
 def test_export_run_to_onnx_writes_valid_graph(trained_run_dir, tmp_path):
     output_path = tmp_path / "model.onnx"
     written = export_run_to_onnx(trained_run_dir, output_path=output_path)
@@ -24,7 +23,6 @@ def test_export_run_to_onnx_writes_valid_graph(trained_run_dir, tmp_path):
     assert sidecar["model_source"] == "custom"
     assert sidecar["mean"] == [0.0, 0.0, 0.0]
     assert sidecar["std"] == [1.0, 1.0, 1.0]
-
 
 def test_export_run_to_onnx_missing_checkpoint(trained_run_dir, tmp_path):
     missing = trained_run_dir / "missing.pth"

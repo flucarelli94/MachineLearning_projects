@@ -1,7 +1,5 @@
 """Dataset download and preparation."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import click
@@ -9,11 +7,9 @@ import click
 from land_cover_segmentation import utils
 from land_cover_segmentation.config import VALID_SCENES, VALID_SPLITS
 
-
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def data() -> None:
     """Dataset download and preparation."""
-
 
 @data.command("download")
 @click.option(
@@ -66,6 +62,5 @@ def download(
     click.echo(
         f"\nDone. Total on disk under {root}: {utils.human_bytes(utils.dir_size(root))}"
     )
-
 
 __all__ = ["data", "download"]

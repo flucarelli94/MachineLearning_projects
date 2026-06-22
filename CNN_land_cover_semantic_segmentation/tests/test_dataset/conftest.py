@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import pytest
 import torch
@@ -12,7 +11,6 @@ from land_cover_segmentation.dataset.augmentation import (
     build_train_augmentation,
     build_val_augmentation,
 )
-
 
 @pytest.fixture()
 def fake_split():
@@ -32,7 +30,6 @@ def fake_split():
         return _FakeSplit(items)
 
     return _fake_split
-
 
 @pytest.fixture
 def datamodule_with_fake_adapters(request):

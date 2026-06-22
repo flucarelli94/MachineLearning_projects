@@ -1,7 +1,5 @@
 """Plain-PyTorch training loop for semantic segmentation."""
 
-from __future__ import annotations
-
 import json
 import math
 import time
@@ -29,7 +27,6 @@ from land_cover_segmentation.utils import configure_logging
 from land_cover_segmentation.utils.model import resolve_device, seed_everything
 
 logger = configure_logging(__name__)
-
 
 class Trainer:
     """Train a segmentation model with AdamW, AMP, and streaming val metrics.
@@ -266,7 +263,6 @@ class Trainer:
             desc="val",
         )
 
-
 def _build_param_groups(model: nn.Module, cfg: Config) -> list[dict[str, Any]]:
     if cfg.model.source == "smp" and hasattr(model, "encoder"):
         encoder_ids = {id(p) for p in model.encoder.parameters()}
@@ -282,7 +278,6 @@ def _build_param_groups(model: nn.Module, cfg: Config) -> list[dict[str, Any]]:
             {"params": other_params},
         ]
     return [{"params": list(model.parameters())}]
-
 
 def _build_scheduler(
     optimizer: torch.optim.Optimizer,
@@ -321,7 +316,6 @@ def _build_scheduler(
 
     return LambdaLR(optimizer, lr_lambda=single_lambda)
 
-
 def _load_or_compute_class_weights(
     cfg: Config,
     datamodule: LoveDADataModule,
@@ -352,7 +346,6 @@ def _load_or_compute_class_weights(
     logger.info("Computed and cached class weights to %s", cache_path)
     return weights
 
-
 def _class_pixel_counts(cfg: Config, datamodule: LoveDADataModule) -> torch.Tensor:
     datamodule._require_setup()
     raw = datamodule._train_ds_raw
@@ -368,7 +361,6 @@ def _class_pixel_counts(cfg: Config, datamodule: LoveDADataModule) -> torch.Tens
         labels = mask[valid]
         counts += torch.bincount(labels, minlength=cfg.data.num_classes).double()
     return counts
-
 
 def _log_epoch(
     epoch: int,
@@ -387,6 +379,5 @@ def _log_epoch(
         val_metrics["miou"],
         lr_str,
     )
-
 
 __all__ = ["Trainer"]

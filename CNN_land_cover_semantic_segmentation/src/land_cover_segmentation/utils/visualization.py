@@ -1,7 +1,5 @@
 """Visualization helpers for segmentation masks and prediction grids."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -11,7 +9,6 @@ from matplotlib.colors import ListedColormap
 from PIL import Image, ImageDraw, ImageFont
 
 from land_cover_segmentation.utils import hex_to_rgb
-
 
 def palette_to_rgb(palette: Sequence[str]) -> np.ndarray:
     """Convert a hex palette to an `(N, 3)` uint8 RGB array.
@@ -28,7 +25,6 @@ def palette_to_rgb(palette: Sequence[str]) -> np.ndarray:
     """
     return np.array([hex_to_rgb(color) for color in palette], dtype=np.uint8)
 
-
 def palette_to_cmap(palette: Sequence[str]) -> ListedColormap:
     """Build a matplotlib colormap from a hex class palette.
 
@@ -44,7 +40,6 @@ def palette_to_cmap(palette: Sequence[str]) -> ListedColormap:
     """
     rgb = palette_to_rgb(palette).astype(np.float64) / 255.0
     return ListedColormap(rgb)
-
 
 def colorize_mask(
     mask: np.ndarray,
@@ -93,7 +88,6 @@ def colorize_mask(
         )
     return rgb
 
-
 def denormalize_image(
     image_chw: np.ndarray | "torch.Tensor",
     mean: Sequence[float],
@@ -125,7 +119,6 @@ def denormalize_image(
     hwc = np.transpose(image_chw * std_arr + mean_arr, (1, 2, 0))
     return np.clip(hwc * 255.0, 0, 255).astype(np.uint8)
 
-
 def content_bbox(image: np.ndarray) -> tuple[int, int, int, int]:
     """Return the tight bounding box of non-black pixels in an image.
 
@@ -150,7 +143,6 @@ def content_bbox(image: np.ndarray) -> tuple[int, int, int, int]:
 
     return content_bbox_from_valid(valid)
 
-
 def content_bbox_from_valid(valid: np.ndarray) -> tuple[int, int, int, int]:
     """Return the tight bounding box of ``True`` pixels in a boolean mask."""
     if valid.ndim != 2:
@@ -162,7 +154,6 @@ def content_bbox_from_valid(valid: np.ndarray) -> tuple[int, int, int, int]:
         height, width = valid.shape
         return 0, height, 0, width
     return int(rows[0]), int(rows[-1]) + 1, int(cols[0]), int(cols[-1]) + 1
-
 
 def intersect_bboxes(
     *bboxes: tuple[int, int, int, int],
@@ -179,7 +170,6 @@ def intersect_bboxes(
         return bboxes[0]
     return row_start, row_end, col_start, col_end
 
-
 def crop_to_content(
     array: np.ndarray,
     bbox: tuple[int, int, int, int],
@@ -189,7 +179,6 @@ def crop_to_content(
     if array.ndim == 2:
         return array[row_start:row_end, col_start:col_end]
     return array[row_start:row_end, col_start:col_end, ...]
-
 
 def attach_outside_legend(
     rgb: np.ndarray,
@@ -253,7 +242,6 @@ def attach_outside_legend(
     combined.paste(image, (0, 0))
     combined.paste(strip, (0, rgb.shape[0]))
     return np.array(combined)
-
 
 def save_prediction_grid(
     images: Sequence[np.ndarray],
@@ -343,7 +331,6 @@ def save_prediction_grid(
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     return path
-
 
 __all__ = [
     "attach_outside_legend",

@@ -1,8 +1,6 @@
-from __future__ import annotations
 
 import logging
 from pathlib import Path
-
 
 def human_bytes(n: float) -> str:
     """Format a byte count as a human-readable string (e.g. `"3.7 GiB"`)."""
@@ -12,14 +10,12 @@ def human_bytes(n: float) -> str:
         n /= 1024
     return f"{n:.1f} TiB"
 
-
 def dir_size(path: str | Path) -> int:
     """Total size in bytes of all files under `path` (recursive). Missing dirs return 0."""
     p = Path(path)
     if not p.exists():
         return 0
     return sum(f.stat().st_size for f in p.rglob("*") if f.is_file())
-
 
 def hex_to_rgb(h: str) -> tuple[int, int, int]:
     """Convert a `"#RRGGBB"` string to an `(R, G, B)` tuple of ints in `0..255`.
@@ -46,7 +42,6 @@ def hex_to_rgb(h: str) -> tuple[int, int, int]:
         raise ValueError(f"Expected 6-digit hex color, got {h!r}")
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
-
 def configure_logging(name: str, *, level: int = logging.INFO) -> logging.Logger:
     """Configure package logging and return a named logger.
 
@@ -71,7 +66,6 @@ def configure_logging(name: str, *, level: int = logging.INFO) -> logging.Logger
         force=True,
     )
     return logging.getLogger(name)
-
 
 __all__ = [
     "configure_logging",

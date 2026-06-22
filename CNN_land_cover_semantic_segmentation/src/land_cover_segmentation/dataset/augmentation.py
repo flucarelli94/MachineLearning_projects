@@ -24,7 +24,6 @@ from collections.abc import Sequence
 
 import albumentations
 
-
 def build_train_augmentation(
     image_size: int,
     *,
@@ -105,7 +104,6 @@ def build_train_augmentation(
         seed=seed,
     )
 
-
 def build_val_augmentation(
     image_size: int,
     *,
@@ -139,6 +137,5 @@ def build_val_augmentation(
             albumentations.pytorch.ToTensorV2(),
         ]
     )
-
 
 __all__ = ["build_train_augmentation", "build_val_augmentation"]

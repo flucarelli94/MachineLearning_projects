@@ -1,7 +1,5 @@
 """Build a segmentation model from configuration."""
 
-from __future__ import annotations
-
 import torch.nn as nn
 import segmentation_models_pytorch as smp
 
@@ -10,7 +8,6 @@ from land_cover_segmentation.models import custom_model
 from land_cover_segmentation.utils import configure_logging
 
 logger = configure_logging(__name__)
-
 
 def build_model(cfg: Config) -> nn.Module:
     """Return a segmentation network for training or inference.
@@ -53,6 +50,5 @@ def build_model(cfg: Config) -> nn.Module:
         cfg.model.unet_features,
     )
     return custom_model.build_model(cfg)
-
 
 __all__ = ["build_model"]

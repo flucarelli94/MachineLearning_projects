@@ -1,10 +1,8 @@
-from __future__ import annotations
 
 import random
 
 import numpy as np
 import torch
-
 
 def seed_everything(seed: int, *, deterministic: bool = False) -> None:
     """Seed Python, NumPy, and PyTorch RNGs for reproducible training.
@@ -26,7 +24,6 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-
 def resolve_device(device: str) -> torch.device:
     """Map a config device string to a `torch.device`.
 
@@ -44,6 +41,5 @@ def resolve_device(device: str) -> torch.device:
     if device == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(device)
-
 
 __all__ = ["resolve_device", "seed_everything"]

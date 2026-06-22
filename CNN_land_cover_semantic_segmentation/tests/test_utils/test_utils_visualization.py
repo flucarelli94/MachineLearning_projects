@@ -12,7 +12,6 @@ from land_cover_segmentation.utils.visualization import (
     save_prediction_grid,
 )
 
-
 def test_palette_to_rgb_and_cmap():
     palette = Config().data.palette
     rgb = palette_to_rgb(palette)
@@ -24,7 +23,6 @@ def test_palette_to_rgb_and_cmap():
     assert isinstance(cmap, ListedColormap)
     assert len(cmap.colors) == len(palette)
 
-
 def test_colorize_mask_maps_classes_and_ignore_index():
     palette = Config().data.palette
     mask = np.array([[0, 1], [2, 255]], dtype=np.int64)
@@ -32,7 +30,6 @@ def test_colorize_mask_maps_classes_and_ignore_index():
     assert rgb.shape == (2, 2, 3)
     assert rgb[0, 1].tolist() == list(hex_to_rgb("#E30B0B"))
     assert rgb[1, 1].tolist() == [128, 128, 128]
-
 
 def test_denormalize_image_round_trip():
     mean = [0.5, 0.5, 0.5]
@@ -43,12 +40,10 @@ def test_denormalize_image_round_trip():
     assert out.dtype == np.uint8
     assert np.all(out == 127)
 
-
 def test_content_bbox_tightens_to_non_black_region():
     image = np.zeros((16, 16, 3), dtype=np.uint8)
     image[2:14, 4:16] = 100
     assert content_bbox(image) == (2, 14, 4, 16)
-
 
 def test_save_prediction_grid_writes_png(tmp_path):
     palette = Config().data.palette
@@ -69,7 +64,6 @@ def test_save_prediction_grid_writes_png(tmp_path):
 
     assert out_path.exists()
     assert out_path.stat().st_size > 0
-
 
 def test_save_prediction_grid_crops_black_padding(tmp_path):
     palette = Config().data.palette

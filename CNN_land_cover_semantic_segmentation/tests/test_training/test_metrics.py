@@ -7,7 +7,6 @@ import torch
 
 from land_cover_segmentation.training.metrics import StreamingConfusionMatrix
 
-
 def test_confusion_matrix_perfect_prediction():
     cm = StreamingConfusionMatrix(num_classes=3, ignore_index=255)
     targets = torch.tensor([[0, 1], [2, 1]])
@@ -18,7 +17,6 @@ def test_confusion_matrix_perfect_prediction():
     assert out["pixel_acc"].item() == pytest.approx(1.0)
     assert torch.allclose(out["per_class_iou"], torch.ones(3))
 
-
 def test_confusion_matrix_excludes_ignore_index():
     cm = StreamingConfusionMatrix(num_classes=2, ignore_index=255)
     targets = torch.tensor([[0, 255], [1, 255]])
@@ -28,7 +26,6 @@ def test_confusion_matrix_excludes_ignore_index():
     assert out["confusion_matrix"].sum().item() == 2
     assert out["confusion_matrix"][0, 1].item() == 1
     assert out["confusion_matrix"][1, 1].item() == 1
-
 
 def test_confusion_matrix_reset():
     cm = StreamingConfusionMatrix(num_classes=2, ignore_index=255)

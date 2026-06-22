@@ -1,13 +1,10 @@
 """Training callbacks: early stopping and JSONL logging."""
 
-from __future__ import annotations
-
 import json
 import math
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal
-
 
 class EarlyStopping:
     """Stop training when a monitored metric stops improving.
@@ -70,7 +67,6 @@ class EarlyStopping:
             self._epochs_without_improvement += 1
         return self.should_stop
 
-
 class JSONLLogger:
     """Append one JSON object per line to a run log file.
 
@@ -97,6 +93,5 @@ class JSONLLogger:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(self._sanitize_for_json(record)) + "\n")
-
 
 __all__ = ["EarlyStopping", "JSONLLogger"]

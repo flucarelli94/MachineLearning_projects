@@ -1,7 +1,5 @@
 """Sliding-window inference with optional Gaussian tile blending."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +16,6 @@ from land_cover_segmentation.inference.write import write_georaster, write_image
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.training.checkpoint import CheckpointIO
 from land_cover_segmentation.utils.model import resolve_device
-
 
 @torch.no_grad()
 def predict_scene(
@@ -54,7 +51,6 @@ def predict_scene(
     )
     class_map = prob_map.argmax(axis=0).astype(np.uint8)
     return prob_map, class_map
-
 
 def predict_run(
     run_dir: Path,
@@ -109,7 +105,6 @@ def predict_run(
             cfg.data.palette,
         )
     return output_path
-
 
 __all__ = [
     "load_normalized_scene",
