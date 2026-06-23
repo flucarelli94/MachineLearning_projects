@@ -1,5 +1,3 @@
-"""Tests for tiled inference and GeoTIFF export."""
-
 import numpy as np
 import rasterio
 
@@ -15,6 +13,7 @@ from land_cover_segmentation.inference.write import write_georaster, write_image
 from land_cover_segmentation.models.factory import build_model
 from land_cover_segmentation.utils import hex_to_rgb
 
+
 def test_load_normalized_scene_from_geotiff(synthetic_geotiff):
     image, georef_path, source_hwc = load_normalized_scene(
         synthetic_geotiff,
@@ -27,12 +26,14 @@ def test_load_normalized_scene_from_geotiff(synthetic_geotiff):
     assert source_hwc.shape == (16, 16, 3)
     assert source_hwc.dtype == np.uint8
 
+
 def test_tile_scene_covers_small_image():
     image = np.arange(12, dtype=np.float32).reshape(3, 2, 2)
     tiles, positions = tile_scene(image, tile=4, overlap=1)
     assert len(tiles) == 1
     assert positions == [(0, 0)]
     assert tiles[0].shape == (3, 2, 2)
+
 
 def test_tile_scene_generates_overlapping_crops():
     image = np.zeros((3, 100, 100), dtype=np.float32)
@@ -42,6 +43,7 @@ def test_tile_scene_generates_overlapping_crops():
     assert positions[0] == (0, 0)
     assert positions[-1][0] == 36
     assert positions[-1][1] == 36
+
 
 def test_reconstruct_blends_constant_probabilities():
     num_classes = 3
@@ -60,6 +62,7 @@ def test_reconstruct_blends_constant_probabilities():
     assert np.allclose(prob_map[1], 1.0)
     assert np.allclose(prob_map[0], 0.0)
     assert np.allclose(prob_map[2], 0.0)
+
 
 def test_predict_scene_returns_prob_and_class_maps():
     cfg = Config(
@@ -83,6 +86,7 @@ def test_predict_scene_returns_prob_and_class_maps():
     assert class_map.dtype == np.uint8
     assert np.all((class_map >= 0) & (class_map < cfg.data.num_classes))
 
+
 def test_write_georaster_round_trip(tmp_path, synthetic_geotiff):
     class_map = np.full((16, 16), 1, dtype=np.uint8)
     out_path = tmp_path / "pred.tif"
@@ -100,6 +104,7 @@ def test_write_georaster_round_trip(tmp_path, synthetic_geotiff):
         assert dst.nodata == 255
         assert dst.read(1)[0, 0] == 1
         assert dst.colormap(1)[1] == (227, 11, 11, 255)
+
 
 def test_write_image_is_rgb(tmp_path):
     class_map = np.zeros((16, 16), dtype=np.uint8)
@@ -119,6 +124,7 @@ def test_write_image_is_rgb(tmp_path):
     assert arr.shape[1] == 16
     assert tuple(arr[0, 0]) == hex_to_rgb(palette[1])
     assert tuple(arr[0, -1]) == hex_to_rgb(palette[6])
+
 
 def test_write_image_legend_is_outside_map(tmp_path):
     class_map = np.zeros((16, 16), dtype=np.uint8)
@@ -144,6 +150,7 @@ def test_write_image_legend_is_outside_map(tmp_path):
     assert 0 < legend_region.shape[0] <= 44
     assert tuple(map_region[0, 0]) == hex_to_rgb(Config().data.palette[1])
 
+
 def test_write_image_crops_predicted_background_margins(tmp_path):
     class_map = np.zeros((16, 16), dtype=np.uint8)
     class_map[:12, :12] = 6
@@ -164,6 +171,7 @@ def test_write_image_crops_predicted_background_margins(tmp_path):
     assert arr.shape[0] > 12
     assert arr.shape[1] == 12
     assert arr[:12, :12].shape == (12, 12, 3)
+
 
 def test_write_image_crops_black_padding(tmp_path):
     class_map = np.zeros((16, 16), dtype=np.uint8)
@@ -187,6 +195,7 @@ def test_write_image_crops_black_padding(tmp_path):
     assert arr.shape[1] == 12
     assert arr[:12, :12].shape == (12, 12, 3)
 
+
 def test_predict_run_writes_colored_png(trained_run_dir, tmp_path, synthetic_geotiff):
     out_path = tmp_path / "pred.png"
     predict_run(trained_run_dir, synthetic_geotiff, out_path)
@@ -197,6 +206,7 @@ def test_predict_run_writes_colored_png(trained_run_dir, tmp_path, synthetic_geo
     with Image.open(out_path) as im:
         assert im.mode == "RGB"
         assert len(np.array(im).shape) == 3
+
 
 def test_predict_run_writes_geotiff(trained_run_dir, tmp_path, synthetic_geotiff):
     out_path = tmp_path / "pred.tif"
