@@ -1,5 +1,3 @@
-"""Tests for config dataclasses and strict YAML load/dump."""
-
 from dataclasses import asdict
 from pathlib import Path
 
@@ -20,6 +18,7 @@ from land_cover_segmentation.config import (
 CONFIGS_DIR = Path(__file__).resolve().parents[1] / "configs"
 CONFIG_PROFILES = sorted(CONFIGS_DIR.rglob("*.yaml"))
 
+
 def test_run_config_keys():
     run_config = RunConfig()
     assert set(asdict(run_config).keys()) == {
@@ -29,9 +28,11 @@ def test_run_config_keys():
         "device",
     }
 
+
 def test_run_config_rejects_unknown_device():
     with pytest.raises(ValueError, match="run.device"):
         RunConfig(device="gpu")
+
 
 def test_model_config_keys():
     model_config = ModelConfig()
@@ -43,9 +44,11 @@ def test_model_config_keys():
         "unet_features",
     }
 
+
 def test_model_config_rejects_unknown_source():
     with pytest.raises(ValueError, match="model.source"):
         ModelConfig(source="unknown")
+
 
 def test_config_keys():
     config = Config()
@@ -58,6 +61,7 @@ def test_config_keys():
         "train",
     }
 
+
 def test_optim_config_keys():
     optim = OptimConfig()
     assert set(asdict(optim).keys()) == {
@@ -68,17 +72,21 @@ def test_optim_config_keys():
         "encoder_lr_warmup_epochs",
     }
 
+
 def test_optim_config_rejects_unknown_name():
     with pytest.raises(ValueError, match="optim.name"):
         OptimConfig(name="sgd")
+
 
 def test_loss_config_keys():
     loss = LossConfig()
     assert set(asdict(loss).keys()) == {"name", "use_class_weights"}
 
+
 def test_loss_config_rejects_unknown_name():
     with pytest.raises(ValueError, match="loss.name"):
         LossConfig(name="ce")
+
 
 def test_train_config_keys():
     train = TrainConfig()
@@ -89,9 +97,11 @@ def test_train_config_keys():
         "artifacts_root",
     }
 
+
 def test_train_config_rejects_invalid_patience():
     with pytest.raises(ValueError, match="train.patience"):
         TrainConfig(patience=0)
+
 
 def test_data_config_keys():
     data_config = DataConfig()
@@ -109,11 +119,13 @@ def test_data_config_keys():
         "palette",
     }
 
+
 def test_data_config_rejects_invalid_fraction():
     with pytest.raises(ValueError, match="data.fraction"):
         DataConfig(fraction=0.0)
     with pytest.raises(ValueError, match="data.fraction"):
         DataConfig(fraction=1.5)
+
 
 class TestLoad:
     @staticmethod
@@ -236,6 +248,7 @@ class TestLoad:
         with pytest.raises(ValueError, match="modl"):
             load(yaml_path)
 
+
 def test_dump_round_trip_preserves_model(tmp_path: Path):
     config = Config(model=ModelConfig(encoder="mobilenet_v2", encoder_weights=None))
     out = tmp_path / "out.yaml"
@@ -245,9 +258,11 @@ def test_dump_round_trip_preserves_model(tmp_path: Path):
     assert loaded.model.encoder_weights is None
     assert loaded.data.root == config.data.root
 
+
 def test_model_config_rejects_empty_unet_features():
     with pytest.raises(ValueError, match="model.unet_features"):
         ModelConfig(source="custom", unet_features=())
+
 
 @pytest.mark.parametrize(
     "profile_path",
