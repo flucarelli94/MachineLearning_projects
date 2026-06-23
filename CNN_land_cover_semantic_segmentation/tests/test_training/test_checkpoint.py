@@ -1,5 +1,3 @@
-"""Tests for checkpoint I/O."""
-
 import json
 
 import pytest
