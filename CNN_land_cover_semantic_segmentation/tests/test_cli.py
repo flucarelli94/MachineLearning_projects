@@ -1,8 +1,7 @@
-"""Tests for the `lcs` CLI."""
-
 from click.testing import CliRunner
 
 from land_cover_segmentation.cli import lcs
+
 
 def test_lcs_help():
     result = CliRunner().invoke(lcs, ["--help"])
@@ -10,6 +9,7 @@ def test_lcs_help():
     assert "model" in result.output
     assert "onnx" in result.output
     assert "data" in result.output
+
 
 def test_model_group_help():
     result = CliRunner().invoke(lcs, ["model", "--help"])
@@ -20,11 +20,13 @@ def test_model_group_help():
     assert "export" not in result.output
     assert "predict-onnx" not in result.output
 
+
 def test_onnx_group_help():
     result = CliRunner().invoke(lcs, ["onnx", "--help"])
     assert result.exit_code == 0
     assert "export" in result.output
     assert "predict-onnx" in result.output
+
 
 class TestTrainCli:
     @staticmethod
@@ -38,6 +40,7 @@ class TestTrainCli:
     def test_train_cli_requires_config():
         result = CliRunner().invoke(lcs, ["model", "train"])
         assert result.exit_code != 0
+
 
 class TestEvaluateCli:
     @staticmethod
@@ -53,6 +56,7 @@ class TestEvaluateCli:
         result = CliRunner().invoke(lcs, ["model", "evaluate"])
         assert result.exit_code != 0
 
+
 class TestPredictCli:
     @staticmethod
     def test_predict_cli_help():
@@ -67,6 +71,7 @@ class TestPredictCli:
         result = CliRunner().invoke(lcs, ["model", "predict"])
         assert result.exit_code != 0
 
+
 class TestPredictOnnxCli:
     @staticmethod
     def test_predict_onnx_cli_help():
@@ -78,7 +83,9 @@ class TestPredictOnnxCli:
         assert "--output" in result.output
 
     @staticmethod
-    def test_predict_onnx_cli_requires_onnx(trained_run_dir, tmp_path, synthetic_geotiff):
+    def test_predict_onnx_cli_requires_onnx(
+        trained_run_dir, tmp_path, synthetic_geotiff
+    ):
         result = CliRunner().invoke(
             lcs,
             [
@@ -93,6 +100,7 @@ class TestPredictOnnxCli:
             ],
         )
         assert result.exit_code != 0
+
 
 class TestExportCli:
     @staticmethod
@@ -132,6 +140,7 @@ class TestExportCli:
         assert output_path.exists()
         assert output_path.with_suffix(".meta.json").exists()
         assert "ONNX written to" in result.output
+
 
 class TestDataCli:
     @staticmethod
