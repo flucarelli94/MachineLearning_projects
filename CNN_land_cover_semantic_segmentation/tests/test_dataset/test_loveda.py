@@ -1,10 +1,3 @@
-"""Tests for the LoveDA datamodule adapter and lifecycle wiring.
-
-The torchgeo dataset itself is not exercised here — we use a small
-in-memory fake split that matches torchgeo's LoveDA item shape
-(`{"image": (C,H,W) uint8 tensor, "mask": (H,W) int tensor}`).
-"""
-
 import pytest
 import torch
 
