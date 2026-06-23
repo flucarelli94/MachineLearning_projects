@@ -2,6 +2,34 @@
 
 Semantic segmentation prototype for [LoveDA](https://github.com/Junjue-Wang/LoveDA) land cover (RGB, 7 classes). Built with PyTorch, [segmentation-models-pytorch](https://github.com/qubvel/segmentation_models.pytorch), and [TorchGeo](https://github.com/microsoft/torchgeo).
 
+## Table of contents
+
+- [Install](#install)
+  - [For users (recommended)](#for-users-recommended)
+  - [For developers](#for-developers)
+  - [With uv (optional)](#with-uv-optional)
+  - [Verify installs](#verify-installs)
+- [Download the dataset](#download-the-dataset)
+  - [Default download](#default-download)
+  - [Custom destination](#custom-destination)
+  - [Subset of splits](#subset-of-splits)
+  - [Scene filter](#scene-filter)
+  - [Skip checksum verification](#skip-checksum-verification)
+  - [Notes](#notes)
+- [Train](#train)
+  - [Config profiles](#config-profiles)
+- [Evaluate](#evaluate)
+- [Export ONNX](#export-onnx)
+  - [ONNX I/O contract](#onnx-io-contract)
+- [Predict](#predict)
+- [Docker](#docker)
+  - [Mount points (inside the container)](#mount-points-inside-the-container)
+  - [Docker config profiles](#docker-config-profiles)
+  - [Build](#build)
+  - [Run examples](#run-examples)
+- [Expected mIoU](#expected-miou)
+- [Known limitations](#known-limitations)
+
 ## Install
 
 Requires Python 3.10+.
@@ -117,164 +145,6 @@ UV_PROJECT_ENVIRONMENT=.venv-onnx-inference uv run lcs onnx predict-onnx --help
 Use a separate `UV_PROJECT_ENVIRONMENT` so the slim sync does not overwrite your main dev
 `.venv`. Export still requires the `onnx-export` extra (or `lcs-export-onnx` Docker image).
 Predict-onnx requires the `{model.onnx}` sibling `model.meta.json` sidecar from export.
-
-## Docker
-
-Four images under [`docker/`](docker/), built with [uv](https://docs.astral.sh/uv/) and aligned
-with pip extras. **Data and run artifacts are never copied into images** — bind-mount them at
-runtime.
-
-| Image | Dockerfile | uv extra | Use |
-| --- | --- | --- | --- |
-| `lcs-training` | `docker/Dockerfile.training` | `evaluation` | train, evaluate, download |
-| `lcs-export-onnx` | `docker/Dockerfile.export-onnx` | `onnx-export` | ONNX export |
-| `lcs-inference-pytorch` | `docker/Dockerfile.inference-pytorch` | `inference` | PyTorch predict |
-| `lcs-inference-onnx` | `docker/Dockerfile.inference-onnx` | `onnx-inference` | ONNX predict (no PyTorch) |
-
-### Mount points (inside the container)
-
-| Path | Purpose |
-| --- | --- |
-| `/data/loveda` | LoveDA dataset (`data.root` in [`configs/docker/base.yaml`](configs/docker/base.yaml)) |
-| `/artifacts` | Run outputs under `/artifacts/runs/<name>/` |
-| `/input` | Inference input rasters (any host file mounted here) |
-| `/output` | Inference outputs |
-
-### Docker config profiles
-
-Configs under `configs/docker/` are baked into images at build time (not bind-mounted).
-They only override paths to match the mount points above; other fields fall back to
-[`config.py`](src/land_cover_segmentation/config.py) defaults unless set in the YAML.
-
-| Profile | Purpose |
-| ------- | ------- |
-| `configs/docker/base.yaml` | Path overlay only (`data.root`, `train.artifacts_root`) |
-| `configs/docker/fast.yaml` | CPU smoke in containers (MobileNetV2, 1 epoch, 20% data, 256 px crops) |
-
-Pass `--config` explicitly on every `docker run` / `docker compose run` — Compose does not
-pick a default. CPU smoke example below uses `fast.yaml`; for a longer GPU run inside
-CUDA image, use `base.yaml` (inherits code defaults: EfficientNet-B0, 5 epochs, full data).
-
-### Build
-
-From the project root (requires `uv.lock` present — run `uv lock` locally if missing):
-
-```bash
-# Training — CPU smoke
-docker build -f docker/Dockerfile.training \
-  --build-arg BUILD_TARGET=cpu \
-  -t lcs-training:cpu .
-
-# Training — CUDA (default BUILD_TARGET=cuda)
-docker build -f docker/Dockerfile.training \
-  --build-arg BUILD_TARGET=cuda \
-  -t lcs-training:cuda .
-
-docker build -f docker/Dockerfile.inference-pytorch -t lcs-inference-pytorch:latest .
-docker build -f docker/Dockerfile.export-onnx -t lcs-export-onnx:latest .
-docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
-```
-
-Or build all services via Compose:
-
-```bash
-docker compose -f docker/docker-compose.yml build
-```
-
-### Run examples
-
-Use `--user "$(id -u):$(id -g)"` so files written to bind mounts (e.g. `/artifacts`,
-`/output`) are owned by your host user, not root.
-
-Train (CPU smoke image, mounted data + artifacts):
-
-```bash
-docker run --rm --user "$(id -u):$(id -g)" \
-  -v "$PWD/data/loveda:/data/loveda" \
-  -v "$PWD/artifacts:/artifacts" \
-  lcs-training:cpu \
-  model train --config configs/docker/fast.yaml --run-name exp1
-```
-
-CUDA training: use `lcs-training:cuda`, add `--gpus all`, and a GPU host with
-[nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
-Example: same mounts as above with `--config configs/docker/base.yaml`.
-
-PyTorch predict:
-
-```bash
-docker run --rm --user "$(id -u):$(id -g)" \
-  -v "$PWD/artifacts/runs/exp1:/run:ro" \
-  -v "$PWD/scene.tif:/input/scene.tif:ro" \
-  -v "$PWD/output:/output" \
-  lcs-inference-pytorch:latest \
-  model predict --run /run --input /input/scene.tif --output /output/pred.tif
-```
-
-ONNX export (writes `model.onnx` and `model.meta.json` sidecar):
-
-```bash
-docker run --rm --user "$(id -u):$(id -g)" \
-  -v "$PWD/artifacts:/artifacts" \
-  lcs-export-onnx:latest \
-  onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
-```
-
-ONNX predict (requires export sidecar; no PyTorch in image):
-
-```bash
-docker run --rm --user "$(id -u):$(id -g)" \
-  -v "$PWD/artifacts/runs/exp1:/run:ro" \
-  -v "$PWD/scene.tif:/input/scene.tif:ro" \
-  -v "$PWD/output:/output" \
-  lcs-inference-onnx:latest \
-  onnx predict-onnx --run /run --onnx /run/model.onnx \
-    --input /input/scene.tif --output /output/pred.tif
-```
-
-Compose wrapper (same mounts preconfigured; set `UID`/`GID` for host ownership).
-
-| Service | Image | Use |
-| --- | --- | --- |
-| `training` | `lcs-training:cpu` | train, evaluate, download |
-| `export-onnx` | `lcs-export-onnx:latest` | ONNX export |
-| `inference-pytorch` | `lcs-inference-pytorch:latest` | PyTorch predict |
-| `inference-onnx` | `lcs-inference-onnx:latest` | ONNX predict |
-
-Train:
-
-```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm training \
-  model train --config configs/docker/fast.yaml --run-name exp1
-```
-
-PyTorch predict (add input/output bind mounts; run dir is under the preconfigured `/artifacts` mount):
-
-```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
-  -v "$PWD/scene.tif:/input/scene.tif:ro" \
-  -v "$PWD/output:/output" \
-  inference-pytorch \
-  model predict --run /artifacts/runs/exp1 --input /input/scene.tif --output /output/pred.tif
-```
-
-ONNX export:
-
-```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm export-onnx \
-  onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx --opset 17
-```
-
-ONNX predict:
-
-```bash
-UID=$(id -u) GID=$(id -g) docker compose -f docker/docker-compose.yml run --rm \
-  -v "$PWD/scene.tif:/input/scene.tif:ro" \
-  -v "$PWD/output:/output" \
-  inference-onnx \
-  onnx predict-onnx --run /artifacts/runs/exp1 --onnx /artifacts/runs/exp1/model.onnx \
-    --input /input/scene.tif --output /output/pred.tif
-```
 
 ## Download the dataset
 
@@ -461,6 +331,161 @@ lcs onnx predict-onnx --run ./artifacts/runs/smoke \
 - **`.tif`** — single-band GeoTIFF with georeferencing copied from the input and an embedded
   colormap (opens correctly in QGIS).
 
+## Docker
+
+Four images under [`docker/`](docker/), built with [uv](https://docs.astral.sh/uv/) and aligned
+with pip extras. **Data and run artifacts are never copied into images** — bind-mount them at
+runtime.
+
+| Image | Dockerfile | uv extra | Use |
+| --- | --- | --- | --- |
+| `lcs-training` | `docker/Dockerfile.training` | `evaluation` | train, evaluate, download |
+| `lcs-export-onnx` | `docker/Dockerfile.export-onnx` | `onnx-export` | ONNX export |
+| `lcs-inference-pytorch` | `docker/Dockerfile.inference-pytorch` | `inference` | PyTorch predict |
+| `lcs-inference-onnx` | `docker/Dockerfile.inference-onnx` | `onnx-inference` | ONNX predict (no PyTorch) |
+
+### Mount points (inside the container)
+
+| Path | Purpose |
+| --- | --- |
+| `/data/loveda` | LoveDA dataset (`data.root` in [`configs/docker/base.yaml`](configs/docker/base.yaml)) |
+| `/artifacts` | Run outputs under `/artifacts/runs/<name>/` |
+| `/input` | Inference input rasters (any host file mounted here) |
+| `/output` | Inference outputs |
+
+### Docker config profiles
+
+Configs under `configs/docker/` are baked into images at build time (not bind-mounted).
+They only override paths to match the mount points above; other fields fall back to
+[`config.py`](src/land_cover_segmentation/config.py) defaults unless set in the YAML.
+
+| Profile | Purpose |
+| ------- | ------- |
+| `configs/docker/base.yaml` | Path overlay only (`data.root`, `train.artifacts_root`) |
+| `configs/docker/fast.yaml` | CPU smoke in containers (MobileNetV2, 1 epoch, 20% data, 256 px crops) |
+
+Pass `--config` explicitly on every `docker run` / `docker compose run` — Compose does not
+pick a default. CPU smoke example below uses `fast.yaml`; for a longer GPU run inside
+CUDA image, use `base.yaml` (inherits code defaults: EfficientNet-B0, 5 epochs, full data).
+
+### Build
+
+From the project root (requires `uv.lock` present — run `uv lock` locally if missing):
+
+```bash
+# Training — CPU smoke
+docker build -f docker/Dockerfile.training \
+  --build-arg BUILD_TARGET=cpu \
+  -t lcs-training:cpu .
+
+# Training — CUDA (default BUILD_TARGET=cuda)
+docker build -f docker/Dockerfile.training \
+  --build-arg BUILD_TARGET=cuda \
+  -t lcs-training:cuda .
+
+docker build -f docker/Dockerfile.inference-pytorch -t lcs-inference-pytorch:latest .
+docker build -f docker/Dockerfile.export-onnx -t lcs-export-onnx:latest .
+docker build -f docker/Dockerfile.inference-onnx -t lcs-inference-onnx:latest .
+```
+
+Or build all services via Compose:
+
+```bash
+docker compose -f docker/docker-compose.yml build
+```
+
+### Run examples
+
+Train (CPU smoke image, mounted data + artifacts):
+
+```bash
+docker run --rm \
+  -v "$PWD/data/loveda:/data/loveda" \
+  -v "$PWD/artifacts:/artifacts" \
+  lcs-training:cpu \
+  model train --config configs/docker/fast.yaml --run-name exp1
+```
+
+CUDA training: use `lcs-training:cuda`, add `--gpus all`, and a GPU host with
+[nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+Example: same mounts as above with `--config configs/docker/base.yaml`.
+
+PyTorch predict:
+
+```bash
+docker run --rm \
+  -v "$PWD/artifacts/runs/exp1:/run:ro" \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  lcs-inference-pytorch:latest \
+  model predict --run /run --input /input/scene.tif --output /output/pred.tif
+```
+
+ONNX export (writes `model.onnx` and `model.meta.json` sidecar):
+
+```bash
+docker run --rm \
+  -v "$PWD/artifacts:/artifacts" \
+  lcs-export-onnx:latest \
+  onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx
+```
+
+ONNX predict (requires export sidecar; no PyTorch in image):
+
+```bash
+docker run --rm \
+  -v "$PWD/artifacts/runs/exp1:/run:ro" \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  lcs-inference-onnx:latest \
+  onnx predict-onnx --run /run --onnx /run/model.onnx \
+    --input /input/scene.tif --output /output/pred.tif
+```
+
+Compose wrapper (same mounts preconfigured).
+
+| Service | Image | Use |
+| --- | --- | --- |
+| `training` | `lcs-training:cpu` | train, evaluate, download |
+| `export-onnx` | `lcs-export-onnx:latest` | ONNX export |
+| `inference-pytorch` | `lcs-inference-pytorch:latest` | PyTorch predict |
+| `inference-onnx` | `lcs-inference-onnx:latest` | ONNX predict |
+
+Train:
+
+```bash
+docker compose -f docker/docker-compose.yml run --rm training \
+  model train --config configs/docker/fast.yaml --run-name exp1
+```
+
+PyTorch predict (add input/output bind mounts; run dir is under the preconfigured `/artifacts` mount):
+
+```bash
+docker compose -f docker/docker-compose.yml run --rm \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  inference-pytorch \
+  model predict --run /artifacts/runs/exp1 --input /input/scene.tif --output /output/pred.tif
+```
+
+ONNX export:
+
+```bash
+docker compose -f docker/docker-compose.yml run --rm export-onnx \
+  onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx --opset 17
+```
+
+ONNX predict:
+
+```bash
+docker compose -f docker/docker-compose.yml run --rm \
+  -v "$PWD/scene.tif:/input/scene.tif:ro" \
+  -v "$PWD/output:/output" \
+  inference-onnx \
+  onnx predict-onnx --run /artifacts/runs/exp1 --onnx /artifacts/runs/exp1/model.onnx \
+    --input /input/scene.tif --output /output/pred.tif
+```
+
 ## Expected mIoU
 
 Rough targets on LoveDA **val** with the default U-Net + EfficientNet-B0 profile
@@ -483,20 +508,3 @@ the data and 256 px crops, expect **~0.20–0.30** val mIoU after 5 epochs (the 
 - **CPU training time** — `fast.yaml` completes in tens of minutes on CPU; full runs expect a
   GPU (T4-class or better).
 - **Dataset size** — a full LoveDA download is ~20 GB on disk.
-
-## Extension hooks
-
-- **Swap the smp encoder** — edit `model.encoder` and `model.encoder_weights` in
-  `configs/*.yaml` (requires `model.source: smp`).
-- **Custom U-Net** — set `model.source: custom` and tune `model.unet_features` (per-level
-  channel widths; one entry per encoder/decoder level) in YAML — see `configs/custom.yaml`.
-  Edit `build_model(cfg)` in `src/land_cover_segmentation/models/custom_model.py` only when
-  you need structural changes beyond width and depth.
-- **Data subset / RAM** — tune `data.fraction` (0–1] in YAML to use a deterministic subset of
-  each split; useful for smoke runs (`fast.yaml` uses `0.5`).
-- **ONNX deployment** — export with `onnx-export` extra (`lcs onnx export --run … --output …`),
-  then predict with `onnx-inference` extra (`lcs onnx predict-onnx --run … --onnx …`).
-- **Predict input** — `lcs model predict` expects a 3-band `uint8` RGB raster (GeoTIFF or PNG).
-
-Run `lcs model train --help`, `lcs model evaluate --help`, `lcs model predict --help`,
-`lcs onnx export --help`, and `lcs onnx predict-onnx --help` for all CLI options.

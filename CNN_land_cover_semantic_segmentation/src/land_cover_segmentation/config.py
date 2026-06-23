@@ -37,7 +37,6 @@ _LOVEDA_PALETTE: list[str] = [
     "#F5E642",  # agriculture
 ]
 
-
 @dataclass
 class DataConfig:
     """Configuration for the data layer (dataset + dataloader).
@@ -109,7 +108,6 @@ class DataConfig:
         """Number of foreground classes."""
         return len(self.classes)
 
-
 @dataclass
 class ModelConfig:
     """Configuration for the segmentation model. Information about the smp encoder and pre-trained
@@ -158,7 +156,6 @@ class ModelConfig:
                 "model.unet_features must be a non-empty tuple of positive channel widths"
             )
 
-
 @dataclass
 class RunConfig:
     """Configuration for a single training or evaluation run.
@@ -188,7 +185,6 @@ class RunConfig:
             raise ValueError(
                 f"Unsupported run.device {self.device!r}; expected 'auto', 'cpu', or 'cuda'."
             )
-
 
 @dataclass
 class OptimConfig:
@@ -220,7 +216,6 @@ class OptimConfig:
         if self.name != "adamw":
             raise ValueError(f"Unsupported optim.name {self.name!r}; expected 'adamw'.")
 
-
 @dataclass
 class LossConfig:
     """Configuration for the training loss.
@@ -241,7 +236,6 @@ class LossConfig:
             raise ValueError(
                 f"Unsupported loss.name {self.name!r}; expected 'dice_ce'."
             )
-
 
 @dataclass
 class TrainConfig:
@@ -268,7 +262,6 @@ class TrainConfig:
     def __post_init__(self) -> None:
         if self.patience < 1:
             raise ValueError(f"train.patience must be >= 1, got {self.patience}.")
-
 
 @dataclass
 class Config:
@@ -301,11 +294,9 @@ class Config:
         """Return a plain nested `dict` view (suitable for YAML/JSON dump)."""
         return asdict(self)
 
-
 # ---------------------------------------------------------------------------
 # YAML I/O
 # ---------------------------------------------------------------------------
-
 
 def _merge_into_dataclass(
     dc_instance: Any, overrides: Mapping[str, Any], path: str
@@ -344,7 +335,6 @@ def _merge_into_dataclass(
             kwargs[name] = new_value
     return type(dc_instance)(**kwargs)
 
-
 def load(path: str | Path) -> Config:
     """Load a YAML config file and deep-merge it onto `Config` defaults.
 
@@ -374,7 +364,6 @@ def load(path: str | Path) -> Config:
         )
     return _merge_into_dataclass(Config(), raw, "")
 
-
 def dump(cfg: Config, path: str | Path) -> None:
     """Write a fully-resolved `Config` to YAML.
 
@@ -392,7 +381,6 @@ def dump(cfg: Config, path: str | Path) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(yaml.safe_dump(cfg.to_dict(), sort_keys=False))
-
 
 __all__ = [
     "Config",

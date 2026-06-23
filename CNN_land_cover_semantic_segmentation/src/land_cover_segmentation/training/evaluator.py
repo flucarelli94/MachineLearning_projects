@@ -1,7 +1,5 @@
 """Evaluation loop for a trained segmentation run."""
 
-from __future__ import annotations
-
 import json
 import math
 from pathlib import Path
@@ -192,6 +190,10 @@ def evaluate_run(
         Directory containing `config.yaml` and `best.pth`.
     split : {"val", "test"}, optional
         Dataset split to evaluate.
+    save_viz : bool, optional
+        Whether to save a qualitative PNG grid of predictions.
+    viz_samples : int, optional
+        Number of rows in the output grid.
 
     Returns
     -------
@@ -218,9 +220,7 @@ def evaluate_run(
     ).to(device)
 
     loader = (
-        datamodule.val_dataloader()
-        if split == "val"
-        else datamodule.test_dataloader()
+        datamodule.val_dataloader() if split == "val" else datamodule.test_dataloader()
     )
     metrics = evaluate_loader(model, loader, loss_fn, cfg, device, desc=split)
     output = {"split": split, **metrics}

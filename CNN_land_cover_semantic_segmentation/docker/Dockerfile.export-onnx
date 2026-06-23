@@ -4,7 +4,7 @@
 #   docker build -f docker/Dockerfile.export-onnx -t lcs-export-onnx:latest .
 #
 # Export (writes model.onnx and model.meta.json sidecar):
-#   docker run --rm --user "$(id -u):$(id -g)" \
+#   docker run --rm \
 #     -v "$PWD/artifacts:/artifacts" \
 #     lcs-export-onnx:latest \
 #     onnx export --run /artifacts/runs/exp1 --output /artifacts/runs/exp1/model.onnx

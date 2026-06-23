@@ -1,11 +1,8 @@
 """Streaming evaluation metrics for semantic segmentation."""
 
-from __future__ import annotations
-
 from typing import Any
 
 import torch
-
 
 class StreamingConfusionMatrix:
     """Accumulate a confusion matrix across batches on CPU.
@@ -85,6 +82,5 @@ class StreamingConfusionMatrix:
             "per_class_f1": per_class_f1,
             "confusion_matrix": self._cm.clone(),
         }
-
 
 __all__ = ["StreamingConfusionMatrix"]

@@ -1,5 +1,3 @@
-"""Tests for training losses."""
-
 import torch
 
 from land_cover_segmentation.training.losses import DiceCELoss

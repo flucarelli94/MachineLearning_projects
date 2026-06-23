@@ -1,9 +1,8 @@
 """Visualization helpers for segmentation masks and prediction grids."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -95,7 +94,7 @@ def colorize_mask(
 
 
 def denormalize_image(
-    image_chw: np.ndarray | "torch.Tensor",
+    image_chw: Union[np.ndarray, "torch.Tensor"],
     mean: Sequence[float],
     std: Sequence[float],
 ) -> np.ndarray:
@@ -152,7 +151,7 @@ def content_bbox(image: np.ndarray) -> tuple[int, int, int, int]:
 
 
 def content_bbox_from_valid(valid: np.ndarray) -> tuple[int, int, int, int]:
-    """Return the tight bounding box of ``True`` pixels in a boolean mask."""
+    """Return the tight bounding box of `True` pixels in a boolean mask."""
     if valid.ndim != 2:
         raise ValueError(f"valid must be 2D, got shape {valid.shape}")
 
@@ -184,7 +183,7 @@ def crop_to_content(
     array: np.ndarray,
     bbox: tuple[int, int, int, int],
 ) -> np.ndarray:
-    """Crop ``array`` to ``bbox`` from :func:`content_bbox`."""
+    """Crop `array` to `bbox` from `content_bbox`."""
     row_start, row_end, col_start, col_end = bbox
     if array.ndim == 2:
         return array[row_start:row_end, col_start:col_end]
@@ -202,14 +201,16 @@ def attach_outside_legend(
     padding: int = 6,
     bg_color: tuple[int, int, int] = (248, 248, 248),
 ) -> np.ndarray:
-    """Append a compact class legend below ``rgb`` without covering the map."""
+    """Append a compact class legend below `rgb` without covering the map."""
     if rgb.ndim != 3 or rgb.shape[2] != 3:
         raise ValueError(f"rgb must have shape (H, W, 3), got {rgb.shape}")
 
     if class_ids is None:
         ids = list(range(len(palette)))
     else:
-        ids = sorted({int(class_id) for class_id in class_ids if 0 <= class_id < len(palette)})
+        ids = sorted(
+            {int(class_id) for class_id in class_ids if 0 <= class_id < len(palette)}
+        )
     if not ids:
         return rgb
 
@@ -220,7 +221,11 @@ def attach_outside_legend(
 
     entries: list[tuple[tuple[int, int, int], str, int, int]] = []
     for class_id in ids:
-        name = class_names[class_id] if class_id < len(class_names) else f"Class {class_id}"
+        name = (
+            class_names[class_id]
+            if class_id < len(class_names)
+            else f"Class {class_id}"
+        )
         color = hex_to_rgb(palette[class_id])
         text_bbox = probe.textbbox((0, 0), name, font=font)
         text_width = text_bbox[2] - text_bbox[0]
@@ -232,7 +237,9 @@ def attach_outside_legend(
         padding + swatch_size + gap + text_width + padding
         for _, _, text_width, _ in entries
     )
-    row_content_height = max(swatch_size, max(text_height for *_, text_height in entries))
+    row_content_height = max(
+        swatch_size, max(text_height for *_, text_height in entries)
+    )
     strip_height = row_content_height + 2 * padding
     strip = Image.new("RGB", (width, strip_height), bg_color)
     draw = ImageDraw.Draw(strip)
@@ -330,7 +337,9 @@ def save_prediction_grid(
         else [f"Class {index}" for index in range(len(palette))]
     )
     legend_patches = [
-        plt.matplotlib.patches.Patch(color=np.array(hex_to_rgb(color)) / 255.0, label=name)
+        plt.matplotlib.patches.Patch(
+            color=np.array(hex_to_rgb(color)) / 255.0, label=name
+        )
         for color, name in zip(palette, legend_names, strict=True)
     ]
     fig.legend(

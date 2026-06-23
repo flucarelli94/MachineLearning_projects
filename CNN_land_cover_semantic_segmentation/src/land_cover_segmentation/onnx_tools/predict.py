@@ -1,7 +1,5 @@
 """Tiled prediction with an ONNX Runtime inference session."""
 
-from __future__ import annotations
-
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -30,7 +28,7 @@ def load_onnx_session(onnx_path: Path) -> ort.InferenceSession:
 
 
 def _softmax_logits(logits: np.ndarray, axis: int = 1) -> np.ndarray:
-    """Apply numerically stable softmax along ``axis``."""
+    """Apply numerically stable softmax along `axis`."""
     shifted = logits - logits.max(axis=axis, keepdims=True)
     exp = np.exp(shifted)
     return (exp / exp.sum(axis=axis, keepdims=True)).astype(np.float32)
@@ -48,7 +46,9 @@ def _tiled_prob_maps(
     tiles, positions = tile_scene(image_chw, tile=tile, overlap=overlap)
     prob_tiles: list[np.ndarray] = []
     for start in range(0, len(tiles), batch_size):
-        batch = np.stack(tiles[start : start + batch_size]).astype(np.float32, copy=False)
+        batch = np.stack(tiles[start : start + batch_size]).astype(
+            np.float32, copy=False
+        )
         logits = run_batch(batch)
         prob_tiles.extend(_softmax_logits(logits, axis=1))
 

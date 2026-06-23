@@ -20,8 +20,6 @@ from land_cover_segmentation.models.factory import build_model
 
 @dataclass
 class StubDataModule:
-    """Minimal stand-in for LoveDADataModule when only mean/std are needed."""
-
     mean: list[float]
     std: list[float]
 

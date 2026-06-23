@@ -1,5 +1,3 @@
-"""Tests for checkpoint I/O."""
-
 import json
 
 import pytest
@@ -8,11 +6,6 @@ import torch.nn as nn
 
 from land_cover_segmentation.config import Config
 from land_cover_segmentation.training.checkpoint import CheckpointIO
-
-
-def test_checkpoint_io_load_run_config_missing_file(tmp_path):
-    with pytest.raises(FileNotFoundError, match="config.yaml"):
-        CheckpointIO.load_run_config(tmp_path)
 
 
 def test_checkpoint_io_load_run_config_missing_file(tmp_path):

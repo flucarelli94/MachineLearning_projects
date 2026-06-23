@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 
@@ -51,19 +49,19 @@ def configure_logging(name: str, *, level: int = logging.INFO) -> logging.Logger
     """Configure package logging and return a named logger.
 
     The root handler is configured on the first call; later calls reuse
-    that setup and return ``logging.getLogger(name)``.
+    that setup and return `logging.getLogger(name)`.
 
     Parameters
     ----------
     name : str
-        Logger name, typically ``__name__`` of the calling module.
+        Logger name, typically `__name__` of the calling module.
     level : int, optional
-        Root log level (default ``logging.INFO``).
+        Root log level (default `logging.INFO`).
 
     Returns
     -------
     logging.Logger
-        Logger for ``name``.
+        Logger for `name`.
     """
     logging.basicConfig(
         level=level,

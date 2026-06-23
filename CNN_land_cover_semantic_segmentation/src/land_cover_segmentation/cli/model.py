@@ -1,7 +1,5 @@
 """Train, evaluate, and predict with PyTorch segmentation models."""
 
-from __future__ import annotations
-
 from dataclasses import replace
 from pathlib import Path
 
@@ -9,11 +7,9 @@ import click
 
 from land_cover_segmentation.config import load
 
-
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def model() -> None:
     """Train, evaluate, and run inference with segmentation models."""
-
 
 @model.command("train")
 @click.option(
@@ -46,7 +42,6 @@ def train(config: Path, run_name: str | None) -> None:
     click.echo(f"Epochs run: {result['epochs_run']}")
     if result["stopped_early"]:
         click.echo("Stopped early (patience exceeded).")
-
 
 @model.command("evaluate")
 @click.option(
@@ -83,7 +78,6 @@ def evaluate(run_dir: Path, split: str, save_viz: bool) -> None:
     if save_viz:
         click.echo(f"Qualitative grid written to {run_dir / 'predictions.png'}")
 
-
 @model.command("predict")
 @click.option(
     "--run",
@@ -116,6 +110,5 @@ def predict(
 
     out = predict_run(run_dir, input_path, output_path)
     click.echo(f"Prediction written to {out}")
-
 
 __all__ = ["evaluate", "model", "predict", "train"]

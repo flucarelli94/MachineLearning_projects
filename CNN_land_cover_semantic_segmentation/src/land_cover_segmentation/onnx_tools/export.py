@@ -1,7 +1,5 @@
 """Export trained segmentation runs to ONNX."""
 
-from __future__ import annotations
-
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -31,7 +29,7 @@ def export_run_to_onnx(
     checkpoint_path : pathlib.Path or None, optional
         Checkpoint to load. Defaults to `run_dir / "best.pth"`.
     output_path : pathlib.Path
-        Destination ``.onnx`` file to write (required).
+        Destination `.onnx` file to write (required).
     opset_version : int, optional
         ONNX opset version passed to `torch.onnx.export`.
 

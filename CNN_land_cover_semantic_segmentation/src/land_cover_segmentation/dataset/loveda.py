@@ -44,12 +44,12 @@ def _loveda_image_hwc_uint8(image: torch.Tensor) -> np.ndarray:
 
 
 def _subset_indices(n: int, fraction: float, seed: int) -> list[int]:
-    """Return sorted indices for a deterministic random subset of size ``k``.
+    """Return sorted indices for a deterministic random subset of size `k`.
 
     Parameters
     ----------
     n : int
-        Size of the full index range ``0..n-1``.
+        Size of the full index range `0..n-1`.
     fraction : float
         Fraction in `(0, 1]` of indices to keep.
     seed : int
@@ -58,7 +58,7 @@ def _subset_indices(n: int, fraction: float, seed: int) -> list[int]:
     Returns
     -------
     list[int]
-        Sorted subset indices, length ``max(1, int(n * fraction))`` capped at ``n``.
+        Sorted subset indices, length `max(1, int(n * fraction))` capped at `n`.
     """
     k = max(1, int(n * fraction))
     if k >= n:

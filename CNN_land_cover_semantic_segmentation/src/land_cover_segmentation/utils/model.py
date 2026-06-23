@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import random
 
 import numpy as np
@@ -33,7 +31,7 @@ def resolve_device(device: str) -> torch.device:
     Parameters
     ----------
     device : str
-        One of ``"auto"``, ``"cpu"``, or ``"cuda"``. ``"auto"`` selects
+        One of `"auto"`, `"cpu"`, or `"cuda"`. `"auto"` selects
         CUDA when available, otherwise CPU.
 
     Returns

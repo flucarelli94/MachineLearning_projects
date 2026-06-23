@@ -1,11 +1,9 @@
-"""Tests for ONNX export."""
-
 import json
 
 import onnx
 import pytest
 
-from land_cover_segmentation.onnx_tools.export_onnx import export_run_to_onnx
+from land_cover_segmentation.onnx_tools.export import export_run_to_onnx
 
 
 def test_export_run_to_onnx_writes_valid_graph(trained_run_dir, tmp_path):

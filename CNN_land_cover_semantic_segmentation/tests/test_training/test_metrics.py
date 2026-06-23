@@ -1,5 +1,3 @@
-"""Tests for streaming evaluation metrics."""
-
 import math
 
 import pytest

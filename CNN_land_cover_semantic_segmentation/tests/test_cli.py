@@ -1,5 +1,3 @@
-"""Tests for the `lcs` CLI."""
-
 from click.testing import CliRunner
 
 from land_cover_segmentation.cli import lcs
@@ -85,7 +83,9 @@ class TestPredictOnnxCli:
         assert "--output" in result.output
 
     @staticmethod
-    def test_predict_onnx_cli_requires_onnx(trained_run_dir, tmp_path, synthetic_geotiff):
+    def test_predict_onnx_cli_requires_onnx(
+        trained_run_dir, tmp_path, synthetic_geotiff
+    ):
         result = CliRunner().invoke(
             lcs,
             [

@@ -1,13 +1,10 @@
 """Torch-free sliding-window tiling and scene loading for inference."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
 import rasterio
-
 
 def _gaussian_kernel(size: int, sigma_ratio: float = 0.25) -> np.ndarray:
     """Build a normalized 2D Gaussian weight map for tile blending.
@@ -29,7 +26,6 @@ def _gaussian_kernel(size: int, sigma_ratio: float = 0.25) -> np.ndarray:
     g1 = np.exp(-0.5 * (axis / sigma) ** 2)
     kernel = np.outer(g1, g1)
     return (kernel / kernel.max()).astype(np.float64)
-
 
 def tile_scene(
     image_chw: np.ndarray,
@@ -79,7 +75,6 @@ def tile_scene(
         row += stride
     return tiles, positions
 
-
 def reconstruct(
     prob_tiles: Sequence[np.ndarray],
     positions: Sequence[tuple[int, int]],
@@ -127,7 +122,6 @@ def reconstruct(
         weight_map[row0 : row0 + tile_h, col0 : col0 + tile_w] += weights
 
     return (acc / np.maximum(weight_map[np.newaxis], 1e-8)).astype(np.float32)
-
 
 def load_normalized_scene(
     path: Path,

@@ -11,13 +11,10 @@ code. `ModelConfig.encoder` / `encoder_weights` are ignored for the custom
 path; set `ModelConfig.unet_features` in YAML to change width and depth.
 """
 
-from __future__ import annotations
-
 import torch
 import torch.nn as nn
 
 from land_cover_segmentation.config import Config
-
 
 class _ConvBlock(nn.Module):
     """Two 3x3 convolutions, batch norm, and ReLU."""
@@ -35,7 +32,6 @@ class _ConvBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.block(x)
-
 
 class _UNet(nn.Module):
     """Compact U-Net with encoder levels and skip connections."""
@@ -98,7 +94,6 @@ class _UNet(nn.Module):
 
         return self.head(x)
 
-
 def build_model(cfg: Config) -> nn.Module:
     """Build the custom U-Net from the resolved config.
 
@@ -119,6 +114,5 @@ def build_model(cfg: Config) -> nn.Module:
         num_classes=cfg.data.num_classes,
         unet_features=cfg.model.unet_features,
     )
-
 
 __all__ = ["build_model"]

@@ -6,7 +6,6 @@ from land_cover_segmentation.dataset.augmentation import (
     build_val_augmentation,
 )
 
-
 def test_build_train_augmentation_interface():
     transform = build_train_augmentation(
         image_size=512,
@@ -17,7 +16,6 @@ def test_build_train_augmentation_interface():
     )
     assert transform is not None
     assert isinstance(transform, albumentations.Compose)
-
 
 def test_build_val_augmentation_interface():
     transform = build_val_augmentation(

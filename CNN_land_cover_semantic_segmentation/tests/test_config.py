@@ -1,5 +1,3 @@
-"""Tests for config dataclasses and strict YAML load/dump."""
-
 from dataclasses import asdict
 from pathlib import Path
 

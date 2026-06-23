@@ -1,10 +1,10 @@
-"""Tests for model construction and forward pass."""
-
 import pytest
 import torch
 
 from land_cover_segmentation.config import Config, DataConfig, ModelConfig
-from land_cover_segmentation.models.custom_model import build_model as build_custom_model
+from land_cover_segmentation.models.custom_model import (
+    build_model as build_custom_model,
+)
 from land_cover_segmentation.models.factory import build_model
 
 

@@ -1,5 +1,3 @@
-"""Tests for training callbacks."""
-
 import json
 from pathlib import Path
 
@@ -31,8 +29,8 @@ def test_jsonl_logger_appends_records(tmp_path: Path):
     logger.log({"epoch": 2, "val_miou": 0.44})
     lines = path.read_text().strip().splitlines()
     assert len(lines) == 2
-    assert json.loads(lines[0])["epoch"] == 1
-    assert json.loads(lines[1])["val_miou"] == pytest.approx(0.44)
+    assert json.loads(lines[0]) == {"epoch": 1, "val_miou": 0.42}
+    assert json.loads(lines[1]) == {"epoch": 2, "val_miou": 0.44}
 
 
 def test_jsonl_logger_serializes_nan(tmp_path: Path):

@@ -1,5 +1,3 @@
-"""Tests for tiled inference and GeoTIFF export."""
-
 import numpy as np
 import rasterio
 

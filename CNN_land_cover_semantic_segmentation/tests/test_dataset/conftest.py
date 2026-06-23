@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 import torch
 
@@ -16,7 +14,7 @@ from land_cover_segmentation.dataset.augmentation import (
 
 @pytest.fixture()
 def fake_split():
-    def _fake_split(items: list[dict]) -> _FakeSplit:
+    def _fake_split(items: list[dict]) -> "_FakeSplit":
         class _FakeSplit:
             """Minimal indexable list-of-items, mimicking a torchgeo split."""
 

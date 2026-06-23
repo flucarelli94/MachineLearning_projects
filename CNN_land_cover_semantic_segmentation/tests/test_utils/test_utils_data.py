@@ -5,9 +5,10 @@ from land_cover_segmentation.utils.data import compute_channel_stats
 
 
 def test_compute_channel_stats_constant_image():
-    img = np.full((4, 4, 3), 128, dtype=np.uint8)
+    constant = 128
+    img = np.full((4, 4, 3), constant, dtype=np.uint8)
     mean, std = compute_channel_stats([img, img, img])
-    assert np.allclose(mean, [128 / 255] * 3)
+    assert np.allclose(mean, [constant / 255] * 3)
     assert np.allclose(std, [0.0] * 3, atol=1e-6)
 
 
@@ -59,9 +60,7 @@ def test_compute_channel_stats_max_samples_matches_full_when_large():
     img1 = np.full((2, 2, 3), 255, dtype=np.uint8)
     images = [img0, img1]
     full_mean, full_std = compute_channel_stats(images)
-    sampled_mean, sampled_std = compute_channel_stats(
-        images, max_samples=10, seed=0
-    )
+    sampled_mean, sampled_std = compute_channel_stats(images, max_samples=10, seed=0)
     assert np.allclose(full_mean, sampled_mean)
     assert np.allclose(full_std, sampled_std)
 

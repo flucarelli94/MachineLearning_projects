@@ -1,12 +1,3 @@
-"""Tests for the LoveDA datamodule adapter and lifecycle wiring.
-
-The torchgeo dataset itself is not exercised here — we use a small
-in-memory fake split that matches torchgeo's LoveDA item shape
-(``{"image": (C,H,W) uint8 tensor, "mask": (H,W) int tensor}``).
-"""
-
-from __future__ import annotations
-
 import pytest
 import torch
 
@@ -156,7 +147,9 @@ def test_subset_indices_returns_full_range_when_fraction_is_one():
 
 
 def test_subset_wraps_dataset_when_fraction_below_one(fake_split):
-    ds = fake_split([{"image": torch.zeros(1), "mask": torch.zeros(1)} for _ in range(10)])
+    ds = fake_split(
+        [{"image": torch.zeros(1), "mask": torch.zeros(1)} for _ in range(10)]
+    )
     indices = _subset_indices(len(ds), fraction=0.5, seed=214)
     subset = torch.utils.data.Subset(ds, indices)
     assert len(subset) == 5

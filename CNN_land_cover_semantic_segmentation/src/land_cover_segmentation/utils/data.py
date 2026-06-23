@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Sequence
 
 import numpy as np
@@ -24,10 +22,10 @@ def compute_channel_stats(
         Indexable, sized collection where each item is an `(H, W, C)`
         `uint8` array.
     max_samples : int or None, optional
-        When set and ``len(images)`` exceeds this value, a uniform random
-        sample of this many indices is used. Requires ``seed``.
+        When set and `len(images)` exceeds this value, a uniform random
+        sample of this many indices is used. Requires `seed`.
     seed : int or None, optional
-        RNG seed for ``max_samples`` subsampling.
+        RNG seed for `max_samples` subsampling.
 
     Returns
     -------
